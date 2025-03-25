@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useData } from "@/context/DataContext";
-import { Expense, ReportTimeframe, Sale, StatsSummary } from "@/lib/types";
+import { Booking, Expense, ReportTimeframe, Sale, StatsSummary } from "@/lib/types";
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { Calendar, Download, TrendingUp, LineChart, BarChart, ArrowUp, ArrowDown } from "lucide-react";
 import { useState } from "react";
@@ -38,7 +38,6 @@ const ReportsPage = () => {
     end: new Date(),
   });
   
-  // Set date range based on timeframe selection
   const handleTimeframeChange = (value: ReportTimeframe) => {
     setTimeframe(value);
     
@@ -65,8 +64,7 @@ const ReportsPage = () => {
     }
   };
   
-  // Filter bookings by date range
-  const filterBookingsByDateRange = (data: typeof bookings) => {
+  const filterBookingsByDateRange = (data: Booking[]) => {
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
     
@@ -79,7 +77,6 @@ const ReportsPage = () => {
     });
   };
   
-  // Fixed: Filter sales by createdAt field
   const filterSalesByDateRange = (data: Sale[]) => {
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
@@ -93,7 +90,6 @@ const ReportsPage = () => {
     });
   };
   
-  // Fixed: Filter expenses by createdAt field
   const filterExpensesByDateRange = (data: Expense[]) => {
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
@@ -107,7 +103,6 @@ const ReportsPage = () => {
     });
   };
   
-  // Filter daily balances by date range
   const filterBalancesByDateRange = (data: typeof dailyBalances) => {
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
@@ -121,7 +116,6 @@ const ReportsPage = () => {
     });
   };
   
-  // Calculate statistics based on filtered data - Fixed for specific types
   const calculateStats = (): StatsSummary => {
     const filteredBookings = filterBookingsByDateRange(bookings);
     const filteredSales = filterSalesByDateRange(sales);
@@ -157,10 +151,8 @@ const ReportsPage = () => {
     };
   };
   
-  // Get statistics
   const stats = calculateStats();
   
-  // Format date range for display
   const formatDateRange = () => {
     if (timeframe === "daily") {
       return format(dateRange.start, "EEEE, MMMM d, yyyy");
@@ -172,7 +164,6 @@ const ReportsPage = () => {
     }
   };
   
-  // Get filtered data using the properly typed filter functions
   const filteredBookings = filterBookingsByDateRange(bookings);
   const filteredSales = filterSalesByDateRange(sales);
   const filteredExpenses = filterExpensesByDateRange(expenses);
@@ -561,4 +552,3 @@ const ReportsPage = () => {
 };
 
 export default ReportsPage;
-

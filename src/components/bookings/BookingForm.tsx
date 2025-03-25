@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -171,14 +172,16 @@ const BookingForm = () => {
       return;
     }
     
+    // Fix: Ensure all required fields are non-optional by using ! operator
+    // This tells TypeScript we're certain these values exist
     const booking = {
-      courtId: data.courtId,
-      date: data.date,
-      startTime: data.startTime,
-      endTime: calculateEndTime(data.startTime),
+      courtId: data.courtId!,
+      date: data.date!,
+      startTime: data.startTime!,
+      endTime: calculateEndTime(data.startTime!),
       status: data.status as any,
       type: data.type as BookingType,
-      courtPrice: data.courtPrice,
+      courtPrice: data.courtPrice!,
       players: selectedPlayers,
       createdBy: user?.id || "",
       createdAt: new Date(),
