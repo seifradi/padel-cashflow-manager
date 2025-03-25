@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useData } from "@/context/DataContext";
-import { ReportTimeframe, StatsSummary } from "@/lib/types";
+import { Expense, ReportTimeframe, Sale, StatsSummary } from "@/lib/types";
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 import { Calendar, Download, TrendingUp, LineChart, BarChart, ArrowUp, ArrowDown } from "lucide-react";
 import { useState } from "react";
@@ -66,11 +65,8 @@ const ReportsPage = () => {
     }
   };
   
-  // Filter data by date range
-  const filterByDateRange = <T extends { date: Date | string; createdAt?: Date | string }>(
-    data: T[],
-    useCreatedAt: boolean = false
-  ): T[] => {
+  // Filter bookings by date range
+  const filterBookingsByDateRange = (data: typeof bookings) => {
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
     
@@ -78,16 +74,58 @@ const ReportsPage = () => {
     end.setHours(23, 59, 59, 999);
     
     return data.filter((item) => {
-      const itemDate = new Date(useCreatedAt ? (item.createdAt as Date) : item.date);
+      const itemDate = new Date(item.date);
+      return itemDate >= start && itemDate <= end;
+    });
+  };
+  
+  // Filter sales by date range (using createdAt field)
+  const filterSalesByDateRange = (data: typeof sales) => {
+    const start = new Date(dateRange.start);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(dateRange.end);
+    end.setHours(23, 59, 59, 999);
+    
+    return data.filter((item) => {
+      const itemDate = new Date(item.createdAt);
+      return itemDate >= start && itemDate <= end;
+    });
+  };
+  
+  // Filter expenses by date range (using createdAt field)
+  const filterExpensesByDateRange = (data: typeof expenses) => {
+    const start = new Date(dateRange.start);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(dateRange.end);
+    end.setHours(23, 59, 59, 999);
+    
+    return data.filter((item) => {
+      const itemDate = new Date(item.createdAt);
+      return itemDate >= start && itemDate <= end;
+    });
+  };
+  
+  // Filter daily balances by date range
+  const filterBalancesByDateRange = (data: typeof dailyBalances) => {
+    const start = new Date(dateRange.start);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(dateRange.end);
+    end.setHours(23, 59, 59, 999);
+    
+    return data.filter((item) => {
+      const itemDate = new Date(item.date);
       return itemDate >= start && itemDate <= end;
     });
   };
   
   // Calculate statistics based on filtered data
   const calculateStats = (): StatsSummary => {
-    const filteredBookings = filterByDateRange(bookings);
-    const filteredSales = filterByDateRange(sales, true);
-    const filteredExpenses = filterByDateRange(expenses, true);
+    const filteredBookings = filterBookingsByDateRange(bookings);
+    const filteredSales = filterSalesByDateRange(sales);
+    const filteredExpenses = filterExpensesByDateRange(expenses);
     
     const bookingsRevenue = filteredBookings.reduce(
       (sum, booking) => sum + booking.totalAmount,
@@ -135,10 +173,10 @@ const ReportsPage = () => {
   };
   
   // Get filtered data
-  const filteredBookings = filterByDateRange(bookings);
-  const filteredSales = filterByDateRange(sales, true);
-  const filteredExpenses = filterByDateRange(expenses, true);
-  const filteredBalances = filterByDateRange(dailyBalances);
+  const filteredBookings = filterBookingsByDateRange(bookings);
+  const filteredSales = filterSalesByDateRange(sales);
+  const filteredExpenses = filterExpensesByDateRange(expenses);
+  const filteredBalances = filterBalancesByDateRange(dailyBalances);
   
   return (
     <div className="space-y-6">

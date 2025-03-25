@@ -1,4 +1,3 @@
-
 import { 
   MOCK_COURTS, 
   MOCK_PLAYERS, 
@@ -11,6 +10,7 @@ import {
   Expense, 
   Player,
   Product, 
+  ProductCategory,
   Sale 
 } from "@/lib/types";
 import { ReactNode, createContext, useContext, useState } from "react";
@@ -53,7 +53,13 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [courts, setCourts] = useState<Court[]>(MOCK_COURTS);
   const [players, setPlayers] = useState<Player[]>(MOCK_PLAYERS);
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  
+  const typedProducts: Product[] = MOCK_PRODUCTS.map(product => ({
+    ...product,
+    category: product.category as ProductCategory
+  }));
+  
+  const [products, setProducts] = useState<Product[]>(typedProducts);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);

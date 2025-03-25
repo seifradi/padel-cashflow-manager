@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -83,7 +82,6 @@ const BookingForm = () => {
   const watchStartTime = form.watch("startTime");
   const watchCourtPrice = form.watch("courtPrice");
   
-  // Calculate end time based on start time (adding 1.5 hours)
   const calculateEndTime = (startTime: string) => {
     if (!startTime) return "";
     
@@ -105,7 +103,6 @@ const BookingForm = () => {
     return `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
   };
   
-  // Handle adding a player to the booking
   const handleAddPlayer = () => {
     setSelectedPlayers([
       ...selectedPlayers,
@@ -117,12 +114,10 @@ const BookingForm = () => {
     ]);
   };
   
-  // Handle removing a player from the booking
   const handleRemovePlayer = (index: number) => {
     setSelectedPlayers(selectedPlayers.filter((_, i) => i !== index));
   };
   
-  // Handle changing player selection
   const handlePlayerChange = (index: number, playerId: string) => {
     const updatedPlayers = [...selectedPlayers];
     
@@ -137,21 +132,18 @@ const BookingForm = () => {
     setSelectedPlayers(updatedPlayers);
   };
   
-  // Handle changing player share
   const handlePlayerShareChange = (index: number, value: number) => {
     const updatedPlayers = [...selectedPlayers];
     updatedPlayers[index].playerShare = value;
     setSelectedPlayers(updatedPlayers);
   };
   
-  // Handle changing padel rental
   const handlePadelRentalChange = (index: number, checked: boolean) => {
     const updatedPlayers = [...selectedPlayers];
     updatedPlayers[index].padelRental = checked;
     setSelectedPlayers(updatedPlayers);
   };
   
-  // Calculate total amount when form values or selected players change
   useState(() => {
     const courtPrice = watchCourtPrice || 0;
     
@@ -180,14 +172,18 @@ const BookingForm = () => {
     }
     
     const booking = {
-      ...data,
+      courtId: data.courtId,
+      date: data.date,
+      startTime: data.startTime,
       endTime: calculateEndTime(data.startTime),
-      players: selectedPlayers,
       status: data.status as any,
       type: data.type as BookingType,
+      courtPrice: data.courtPrice,
+      players: selectedPlayers,
       createdBy: user?.id || "",
       createdAt: new Date(),
       totalAmount,
+      notes: data.notes
     };
     
     try {
