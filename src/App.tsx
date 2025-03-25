@@ -13,7 +13,7 @@ import Inventory from "./pages/Inventory";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import { AuthProvider } from "./context/AuthContext";
-import { DataProvider } from "./context/DataContext";
+import { DataProvider } from "./context/data";
 
 const queryClient = new QueryClient();
 
