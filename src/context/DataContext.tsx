@@ -1,3 +1,4 @@
+
 import { 
   MOCK_COURTS, 
   MOCK_PLAYERS, 
@@ -54,6 +55,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [courts, setCourts] = useState<Court[]>(MOCK_COURTS);
   const [players, setPlayers] = useState<Player[]>(MOCK_PLAYERS);
   
+  // Properly cast the product categories
   const typedProducts: Product[] = MOCK_PRODUCTS.map(product => ({
     ...product,
     category: product.category as ProductCategory

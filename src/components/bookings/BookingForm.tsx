@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { CalendarIcon, Minus, Plus, TrashIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -144,7 +144,7 @@ const BookingForm = () => {
     setSelectedPlayers(updatedPlayers);
   };
   
-  useState(() => {
+  useEffect(() => {
     const courtPrice = watchCourtPrice || 0;
     
     const playerSharesTotal = selectedPlayers.reduce(
@@ -158,7 +158,7 @@ const BookingForm = () => {
     );
     
     setTotalAmount(courtPrice + playerSharesTotal + padelRentalTotal);
-  });
+  }, [selectedPlayers, watchCourtPrice]);
   
   const onSubmit = (data: z.infer<typeof BookingFormSchema>) => {
     if (selectedPlayers.length === 0) {
@@ -183,7 +183,7 @@ const BookingForm = () => {
       createdBy: user?.id || "",
       createdAt: new Date(),
       totalAmount,
-      notes: data.notes
+      notes: data.notes || ""
     };
     
     try {

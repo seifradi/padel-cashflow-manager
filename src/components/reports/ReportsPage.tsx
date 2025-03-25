@@ -79,8 +79,8 @@ const ReportsPage = () => {
     });
   };
   
-  // Filter sales by date range (using createdAt field)
-  const filterSalesByDateRange = (data: typeof sales) => {
+  // Fixed: Filter sales by createdAt field
+  const filterSalesByDateRange = (data: Sale[]) => {
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
     
@@ -93,8 +93,8 @@ const ReportsPage = () => {
     });
   };
   
-  // Filter expenses by date range (using createdAt field)
-  const filterExpensesByDateRange = (data: typeof expenses) => {
+  // Fixed: Filter expenses by createdAt field
+  const filterExpensesByDateRange = (data: Expense[]) => {
     const start = new Date(dateRange.start);
     start.setHours(0, 0, 0, 0);
     
@@ -121,7 +121,7 @@ const ReportsPage = () => {
     });
   };
   
-  // Calculate statistics based on filtered data
+  // Calculate statistics based on filtered data - Fixed for specific types
   const calculateStats = (): StatsSummary => {
     const filteredBookings = filterBookingsByDateRange(bookings);
     const filteredSales = filterSalesByDateRange(sales);
@@ -172,7 +172,7 @@ const ReportsPage = () => {
     }
   };
   
-  // Get filtered data
+  // Get filtered data using the properly typed filter functions
   const filteredBookings = filterBookingsByDateRange(bookings);
   const filteredSales = filterSalesByDateRange(sales);
   const filteredExpenses = filterExpensesByDateRange(expenses);
@@ -561,3 +561,4 @@ const ReportsPage = () => {
 };
 
 export default ReportsPage;
+
