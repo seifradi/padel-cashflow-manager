@@ -1,43 +1,19 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useData } from "@/context/DataContext";
 import { PRODUCT_CATEGORIES } from "@/lib/constants";
 import { 
-  MoreHorizontal,
   Package, 
   Plus, 
   AlertCircle,
   ShoppingCart,
-  ArrowUpDown
+  ArrowUpDown,
+  Download
 } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import PageTitle from "../common/PageTitle";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AmountInput from "../common/AmountInput";
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -49,27 +25,54 @@ import {
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "../common/StatusBadge";
 import AddProductForm from "./AddProductForm";
+import EditProductForm from "./EditProductForm";
+import StockAdjustmentForm from "./StockAdjustmentForm";
+import InventoryFilters from "./InventoryFilters";
+import ProductDetails from "./ProductDetails";
+import DeleteProductConfirmation from "./DeleteProductConfirmation";
+import BulkImportForm from "./BulkImportForm";
+import { Product } from "@/lib/types";
 
 const InventoryPage = () => {
-  const { products, updateProduct } = useData();
+  const { products, refreshProducts } = useData();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [stockFilter, setStockFilter] = useState("all");
   const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [isEditProductDialogOpen, setIsEditProductDialogOpen] = useState(false);
+  const [isStockAdjustDialogOpen, setIsStockAdjustDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
-  const [newStockAmount, setNewStockAmount] = useState(0);
+  const [selectedProductForDetails, setSelectedProductForDetails] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
-  // Filter products by search term and category
+  // Refresh products when component mounts
+  useEffect(() => {
+    refreshProducts();
+  }, [refreshProducts]);
+  
+  // Filter products by search term, category, and stock status
   const filteredProducts = products
     .filter((product) => {
       const matchesSearch = product.name
         .toLowerCase()
         .includes(search.toLowerCase());
+      
       const matchesCategory =
         categoryFilter === "all" || product.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+      
+      let matchesStock = true;
+      if (stockFilter === "low") {
+        matchesStock = !!product.minStock && product.stock <= product.minStock && product.stock > 0;
+      } else if (stockFilter === "out") {
+        matchesStock = product.stock === 0;
+      } else if (stockFilter === "in") {
+        matchesStock = product.stock > 0 && (!product.minStock || product.stock > product.minStock);
+      }
+      
+      return matchesSearch && matchesCategory && matchesStock;
     })
     .sort((a, b) => {
       if (sortDirection === 'asc') {
@@ -87,35 +90,27 @@ const InventoryPage = () => {
     return acc;
   }, {} as Record<string, typeof products>);
   
-  // Initialize stock update dialog
-  const openUpdateDialog = (productId: string) => {
-    const product = products.find((p) => p.id === productId);
-    if (product) {
-      setSelectedProduct(productId);
-      setNewStockAmount(product.stock);
-      setIsUpdateDialogOpen(true);
-    }
+  // Open product details
+  const openProductDetails = (productId: string) => {
+    setSelectedProductForDetails(productId);
   };
   
-  // Handle stock update
-  const handleUpdateStock = () => {
-    if (!selectedProduct) return;
-    
-    const product = products.find((p) => p.id === selectedProduct);
-    if (!product) return;
-    
-    try {
-      updateProduct({
-        ...product,
-        stock: newStockAmount,
-      });
-      
-      toast.success("Stock updated successfully");
-      setIsUpdateDialogOpen(false);
-    } catch (error) {
-      toast.error("Failed to update stock");
-      console.error(error);
-    }
+  // Handle edit product
+  const handleEditProduct = (productId: string) => {
+    setSelectedProduct(productId);
+    setIsEditProductDialogOpen(true);
+  };
+  
+  // Handle stock adjustment
+  const handleStockAdjust = (productId: string) => {
+    setSelectedProduct(productId);
+    setIsStockAdjustDialogOpen(true);
+  };
+  
+  // Handle delete product
+  const handleDeleteProduct = (productId: string) => {
+    setSelectedProduct(productId);
+    setIsDeleteDialogOpen(true);
   };
 
   // Toggle sort direction
@@ -137,13 +132,48 @@ const InventoryPage = () => {
   
   // Count low stock items
   const lowStockCount = products.filter(
-    (product) => product.minStock && product.stock <= product.minStock
+    (product) => product.minStock && product.stock <= product.minStock && product.stock > 0
   ).length;
   
   // Count out of stock items
   const outOfStockCount = products.filter(
     (product) => product.stock === 0
   ).length;
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    // Headers
+    const headers = ['name', 'category', 'price', 'cost', 'stock', 'min_stock'];
+    
+    // Data rows
+    const rows = products.map(product => [
+      product.name,
+      product.category,
+      product.price.toString(),
+      product.cost.toString(),
+      product.stock.toString(),
+      (product.minStock || '').toString()
+    ]);
+    
+    // Combine and create CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+    
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `inventory_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    toast.success('Inventory exported to CSV');
+  };
   
   return (
     <div className="space-y-6">
@@ -168,8 +198,12 @@ const InventoryPage = () => {
             <AlertCircle className="h-6 w-6 text-yellow-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground">Low Stock Items</p>
-            <h3 className="text-2xl font-bold">{lowStockCount}</h3>
+            <p className="text-sm font-medium text-muted-foreground">
+              {lowStockCount > 0 ? "Low Stock Items" : "Out of Stock"}
+            </p>
+            <h3 className="text-2xl font-bold">
+              {lowStockCount > 0 ? lowStockCount : outOfStockCount}
+            </h3>
           </div>
         </div>
         
@@ -186,47 +220,26 @@ const InventoryPage = () => {
       
       <div className="bg-card rounded-lg border shadow-sm animate-slide-in [animation-delay:300ms]">
         <div className="p-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <Input
-              placeholder="Search products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="md:w-80"
-            />
-            
-            <Select
-              value={categoryFilter}
-              onValueChange={setCategoryFilter}
-            >
-              <SelectTrigger className="md:w-52">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent className="pointer-events-auto">
-                <SelectItem value="all">All Categories</SelectItem>
-                {PRODUCT_CATEGORIES.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <div className="flex-1"></div>
-            
-            <Button 
-              className="ml-auto"
-              onClick={() => setIsAddProductDialogOpen(true)}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Product
-            </Button>
-          </div>
+          <InventoryFilters 
+            search={search}
+            onSearchChange={setSearch}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            stockFilter={stockFilter}
+            onStockFilterChange={setStockFilter}
+            onAddProduct={() => setIsAddProductDialogOpen(true)}
+            onExportCSV={handleExportCSV}
+            onImportCSV={() => setIsImportDialogOpen(true)}
+          />
           
           <Tabs defaultValue="grid">
             <TabsList className="mb-4">
               <TabsTrigger value="grid">Grid View</TabsTrigger>
               <TabsTrigger value="table">Table View</TabsTrigger>
               <TabsTrigger value="category">Category View</TabsTrigger>
+              {selectedProductForDetails && (
+                <TabsTrigger value="details">Product Details</TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="grid" className="mt-0">
@@ -235,7 +248,8 @@ const InventoryPage = () => {
                   filteredProducts.map((product) => (
                     <div
                       key={product.id}
-                      className="border rounded-lg p-4 transition-all-fast hover:border-primary/30 hover:shadow-md"
+                      className="border rounded-lg p-4 transition-colors hover:border-primary/30 hover:shadow-md cursor-pointer"
+                      onClick={() => openProductDetails(product.id)}
                     >
                       <div className="flex justify-between">
                         <div>
@@ -244,22 +258,6 @@ const InventoryPage = () => {
                             {product.category}
                           </Badge>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Actions</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48 pointer-events-auto">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openUpdateDialog(product.id)}>
-                              Update Stock
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>Edit Product</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
                       
                       <div className="mt-3 space-y-1">
@@ -329,7 +327,11 @@ const InventoryPage = () => {
                   <TableBody>
                     {filteredProducts.length > 0 ? (
                       filteredProducts.map((product) => (
-                        <TableRow key={product.id}>
+                        <TableRow 
+                          key={product.id}
+                          className="cursor-pointer"
+                          onClick={() => openProductDetails(product.id)}
+                        >
                           <TableCell className="font-medium">{product.name}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="capitalize">
@@ -347,19 +349,18 @@ const InventoryPage = () => {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="pointer-events-auto">
-                                <DropdownMenuItem onClick={() => openUpdateDialog(product.id)}>
-                                  Update Stock
-                                </DropdownMenuItem>
-                                <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div className="flex justify-end space-x-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditProduct(product.id);
+                                }}
+                              >
+                                <ArrowUpDown className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -389,18 +390,11 @@ const InventoryPage = () => {
                         {categoryProducts.map((product) => (
                           <div
                             key={product.id}
-                            className="border rounded-lg p-4 transition-all-fast hover:border-primary/30 hover:shadow-md"
+                            className="border rounded-lg p-4 transition-colors hover:border-primary/30 hover:shadow-md cursor-pointer"
+                            onClick={() => openProductDetails(product.id)}
                           >
                             <div className="flex justify-between">
                               <h4 className="font-medium truncate">{product.name}</h4>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8"
-                                onClick={() => openUpdateDialog(product.id)}
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
                             </div>
                             
                             <div className="mt-3 space-y-1">
@@ -429,43 +423,58 @@ const InventoryPage = () => {
                 })}
               </div>
             </TabsContent>
+            
+            {selectedProductForDetails && (
+              <TabsContent value="details" className="mt-0">
+                {selectedProductForDetails && products.find(p => p.id === selectedProductForDetails) && (
+                  <div className="max-w-3xl mx-auto">
+                    <ProductDetails 
+                      product={products.find(p => p.id === selectedProductForDetails) as Product}
+                      onEdit={() => handleEditProduct(selectedProductForDetails)}
+                      onStockAdjust={() => handleStockAdjust(selectedProductForDetails)}
+                      onDelete={() => handleDeleteProduct(selectedProductForDetails)}
+                    />
+                  </div>
+                )}
+              </TabsContent>
+            )}
           </Tabs>
         </div>
       </div>
       
-      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
-        <DialogContent className="pointer-events-auto">
-          <DialogHeader>
-            <DialogTitle>Update Stock</DialogTitle>
-            <DialogDescription>
-              Update the current stock level for this product.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <label className="text-sm font-medium">New Stock Amount</label>
-            <AmountInput
-              value={newStockAmount}
-              onChange={setNewStockAmount}
-              min={0}
-              currency="Units"
-            />
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUpdateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleUpdateStock}>
-              Update Stock
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
       <AddProductForm 
         isOpen={isAddProductDialogOpen} 
         onClose={() => setIsAddProductDialogOpen(false)} 
+      />
+      
+      <EditProductForm 
+        isOpen={isEditProductDialogOpen}
+        onClose={() => setIsEditProductDialogOpen(false)}
+        productId={selectedProduct}
+      />
+      
+      <StockAdjustmentForm
+        isOpen={isStockAdjustDialogOpen}
+        onClose={() => setIsStockAdjustDialogOpen(false)}
+        productId={selectedProduct}
+      />
+      
+      <DeleteProductConfirmation
+        isOpen={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        productId={selectedProduct}
+        onDeleted={() => {
+          refreshProducts();
+          if (selectedProductForDetails === selectedProduct) {
+            setSelectedProductForDetails(null);
+          }
+        }}
+      />
+      
+      <BulkImportForm
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onImported={refreshProducts}
       />
     </div>
   );

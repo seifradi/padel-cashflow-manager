@@ -17,7 +17,7 @@ const Settings = () => {
         subtitle="Configure and personalize your cash register"
       />
       
-      <Alert variant="info" className="mb-6">
+      <Alert className="mb-6">
         <InfoIcon className="h-4 w-4" />
         <AlertTitle>About User Invitations</AlertTitle>
         <AlertDescription>
