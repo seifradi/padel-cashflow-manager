@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { MOCK_CURRENT_USER } from "@/lib/constants";
-import { Menu, User } from "lucide-react";
+import { Menu, User, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   DropdownMenu, 
@@ -12,13 +11,14 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAuth } from "@/context/AuthContext";
 
 interface HeaderProps {
   title?: string;
 }
 
 const Header = ({ title }: HeaderProps) => {
-  const user = MOCK_CURRENT_USER;
+  const { user, logout } = useAuth();
   
   const getUserInitials = (name: string) => {
     return name
@@ -49,7 +49,7 @@ const Header = ({ title }: HeaderProps) => {
             <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-primary/10 text-primary">
-                  {getUserInitials(user.name)}
+                  {user ? getUserInitials(user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
               <span className="sr-only">User menu</span>
@@ -58,8 +58,8 @@ const Header = ({ title }: HeaderProps) => {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.role}</p>
+                <p className="text-sm font-medium">{user?.name}</p>
+                <p className="text-xs text-muted-foreground">{user?.role}</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -68,7 +68,10 @@ const Header = ({ title }: HeaderProps) => {
               Profile
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
+            <DropdownMenuItem onClick={logout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

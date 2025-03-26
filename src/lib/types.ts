@@ -1,4 +1,5 @@
 
+// User and auth types
 export type User = {
   id: string;
   name: string;
@@ -6,6 +7,7 @@ export type User = {
   avatar?: string;
 };
 
+// Database entities
 export type Player = {
   id: string;
   name: string;
@@ -103,4 +105,126 @@ export type StatsSummary = {
   totalSales: number;
   totalExpenses: number;
   netProfit: number;
+};
+
+// Supabase database types
+export type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          name: string;
+          role: string;
+          avatar_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          role?: string;
+          avatar_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          role?: string;
+          avatar_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      courts: {
+        Row: {
+          id: string;
+          name: string;
+          is_available: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          is_available?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          is_available?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      players: {
+        Row: {
+          id: string;
+          name: string;
+          phone: string | null;
+          special_price: number | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          phone?: string | null;
+          special_price?: number | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          phone?: string | null;
+          special_price?: number | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      products: {
+        Row: {
+          id: string;
+          name: string;
+          category: string;
+          price: number;
+          cost: number;
+          stock: number;
+          min_stock: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category: string;
+          price: number;
+          cost: number;
+          stock: number;
+          min_stock?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          category?: string;
+          price?: number;
+          cost?: number;
+          stock?: number;
+          min_stock?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      // Add other tables as needed
+    };
+  };
 };

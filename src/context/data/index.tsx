@@ -7,48 +7,74 @@ import { BookingProvider, useBookings } from "./BookingContext";
 import { SaleProvider, useSales } from "./SaleContext";
 import { ExpenseProvider, useExpenses } from "./ExpenseContext";
 import { DailyBalanceProvider, useDailyBalance } from "./DailyBalanceContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Combined hook to access all data contexts
 export const useData = () => {
-  const { courts } = useCourts();
-  const { players, addPlayer, updatePlayer } = usePlayers();
-  const { products, updateProduct } = useProducts();
-  const { bookings, addBooking, updateBooking } = useBookings();
-  const { sales, addSale } = useSales();
-  const { expenses, addExpense } = useExpenses();
-  const { dailyBalances, getCurrentDailyBalance, startDay, closeDay } = useDailyBalance();
+  const { courts, refreshCourts } = useCourts();
+  const { players, addPlayer, updatePlayer, refreshPlayers } = usePlayers();
+  const { products, updateProduct, refreshProducts } = useProducts();
+  const { bookings, addBooking, updateBooking, refreshBookings } = useBookings();
+  const { sales, addSale, refreshSales } = useSales();
+  const { expenses, addExpense, refreshExpenses } = useExpenses();
+  const { dailyBalances, getCurrentDailyBalance, startDay, closeDay, refreshBalances } = useDailyBalance();
+
+  const refreshAllData = async () => {
+    await Promise.all([
+      refreshCourts(),
+      refreshPlayers(),
+      refreshProducts(),
+      refreshBookings(),
+      refreshSales(),
+      refreshExpenses(),
+      refreshBalances()
+    ]);
+  };
 
   return {
     // Courts
     courts,
+    refreshCourts,
     
     // Players
     players,
     addPlayer,
     updatePlayer,
+    refreshPlayers,
     
     // Products
     products,
     updateProduct,
+    refreshProducts,
     
     // Bookings
     bookings,
     addBooking,
     updateBooking,
+    refreshBookings,
     
     // Sales
     sales,
     addSale,
+    refreshSales,
     
     // Expenses
     expenses,
     addExpense,
+    refreshExpenses,
     
     // Daily Balance
     dailyBalances,
     getCurrentDailyBalance,
     startDay,
-    closeDay
+    closeDay,
+    refreshBalances,
+    
+    // Global refresh
+    refreshAllData,
+    
+    // Supabase client for direct access when needed
+    supabase
   };
 };
 
