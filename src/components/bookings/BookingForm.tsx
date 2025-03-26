@@ -61,18 +61,42 @@ const BookingForm = () => {
   };
   
   const handleAddPlayer = () => {
+    // Calculate the player share based on court price and number of players
+    const playerCount = selectedPlayers.length + 1;
+    const perPlayerCourtShare = watchCourtPrice / playerCount;
+    
+    // Update existing players' shares
+    const updatedPlayers = selectedPlayers.map(player => ({
+      ...player,
+      playerShare: perPlayerCourtShare
+    }));
+    
+    // Add new player with calculated share
     setSelectedPlayers([
-      ...selectedPlayers,
+      ...updatedPlayers,
       {
         playerId: "",
-        playerShare: PLAYER_DEFAULT_SHARE,
+        playerShare: perPlayerCourtShare,
         padelRental: false,
       },
     ]);
   };
   
   const handleRemovePlayer = (index: number) => {
-    setSelectedPlayers(selectedPlayers.filter((_, i) => i !== index));
+    // Remove the player
+    const newPlayers = selectedPlayers.filter((_, i) => i !== index);
+    
+    // Recalculate shares if there are remaining players
+    if (newPlayers.length > 0) {
+      const perPlayerCourtShare = watchCourtPrice / newPlayers.length;
+      const updatedPlayers = newPlayers.map(player => ({
+        ...player,
+        playerShare: perPlayerCourtShare
+      }));
+      setSelectedPlayers(updatedPlayers);
+    } else {
+      setSelectedPlayers([]);
+    }
   };
   
   const handlePlayerChange = (index: number, playerId: string) => {
@@ -101,6 +125,18 @@ const BookingForm = () => {
     setSelectedPlayers(updatedPlayers);
   };
   
+  // Recalculate player shares when court price changes
+  useEffect(() => {
+    if (selectedPlayers.length > 0) {
+      const perPlayerCourtShare = watchCourtPrice / selectedPlayers.length;
+      const updatedPlayers = selectedPlayers.map(player => ({
+        ...player,
+        playerShare: perPlayerCourtShare
+      }));
+      setSelectedPlayers(updatedPlayers);
+    }
+  }, [watchCourtPrice]);
+  
   useEffect(() => {
     const courtPrice = watchCourtPrice || 0;
     
@@ -114,10 +150,10 @@ const BookingForm = () => {
       0
     );
     
-    setTotalAmount(courtPrice + playerSharesTotal + padelRentalTotal);
+    setTotalAmount(playerSharesTotal + padelRentalTotal);
   }, [selectedPlayers, watchCourtPrice]);
   
-  const onSubmit = (data: BookingFormValues) => {
+  const onSubmit = async (data: BookingFormValues) => {
     if (selectedPlayers.length === 0) {
       toast.error("Please add at least one player to the booking");
       return;
@@ -145,7 +181,7 @@ const BookingForm = () => {
     };
     
     try {
-      addBooking(booking);
+      await addBooking(booking);
       toast.success("Booking created successfully");
       form.reset({
         courtId: "",
