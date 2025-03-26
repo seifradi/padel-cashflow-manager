@@ -15,19 +15,16 @@ export const useData = () => {
   const { players, addPlayer, updatePlayer, refreshPlayers } = usePlayers();
   const { products, updateProduct, refreshProducts } = useProducts();
   const { bookings, addBooking, updateBooking, refreshBookings } = useBookings();
-  const { sales, addSale, refreshSales } = useSales();
-  const { expenses, addExpense, refreshExpenses } = useExpenses();
-  const { dailyBalances, getCurrentDailyBalance, startDay, closeDay, refreshBalances } = useDailyBalance();
+  const { sales, addSale } = useSales();
+  const { expenses, addExpense } = useExpenses();
+  const { dailyBalances, getCurrentDailyBalance, startDay, closeDay } = useDailyBalance();
 
   const refreshAllData = async () => {
     await Promise.all([
       refreshCourts(),
       refreshPlayers(),
       refreshProducts(),
-      refreshBookings(),
-      refreshSales(),
-      refreshExpenses(),
-      refreshBalances()
+      refreshBookings()
     ]);
   };
 
@@ -56,19 +53,16 @@ export const useData = () => {
     // Sales
     sales,
     addSale,
-    refreshSales,
     
     // Expenses
     expenses,
     addExpense,
-    refreshExpenses,
     
     // Daily Balance
     dailyBalances,
     getCurrentDailyBalance,
     startDay,
     closeDay,
-    refreshBalances,
     
     // Global refresh
     refreshAllData,

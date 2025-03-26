@@ -19,7 +19,14 @@ interface CourtDetailsProps {
   courts: Court[];
 }
 
+// Add 23:00 to the time slots
+const EXTENDED_TIME_SLOTS = [...TIME_SLOTS, "23:00"];
+
 const CourtDetails = ({ form, courts }: CourtDetailsProps) => {
+  // Get today's date for the date picker
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to beginning of the day for proper comparison
+
   return (
     <div className="space-y-4">
       <FormField
@@ -78,6 +85,7 @@ const CourtDetails = ({ form, courts }: CourtDetailsProps) => {
                     mode="single"
                     selected={field.value}
                     onSelect={field.onChange}
+                    disabled={(date) => date < today} // Disable dates before today
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
                   />
@@ -101,7 +109,7 @@ const CourtDetails = ({ form, courts }: CourtDetailsProps) => {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="pointer-events-auto">
-                  {TIME_SLOTS.map((time) => (
+                  {EXTENDED_TIME_SLOTS.map((time) => (
                     <SelectItem key={time} value={time}>
                       {time}
                     </SelectItem>

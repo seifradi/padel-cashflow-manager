@@ -36,13 +36,14 @@ const BookingSummary = ({
       </div>
       
       <div className="flex justify-between items-center mb-1">
-        <span className="font-medium">Player Shares:</span>
-        <span>{playerSharesTotal} TNd</span>
+        <span className="font-medium">Equipment Rental:</span>
+        <span>{padelRentalTotal} TNd</span>
       </div>
       
       <div className="flex justify-between items-center mb-3">
-        <span className="font-medium">Equipment Rental:</span>
-        <span>{padelRentalTotal} TNd</span>
+        <span className="font-medium text-sm text-muted-foreground">
+          (Each player share: {(courtPrice / 4).toFixed(2)} TNd)
+        </span>
       </div>
       
       <div className="flex justify-between items-center text-lg font-semibold border-t pt-3">

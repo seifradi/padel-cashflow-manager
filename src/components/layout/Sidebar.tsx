@@ -1,95 +1,119 @@
 
-import { 
-  BarChartBig, 
-  Home, 
-  CircleDollarSign, 
-  Calendar, 
-  Package, 
-  Settings 
-} from "lucide-react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { Sidebar as ShellSidebar } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 import {
-  Sidebar as ShadcnSidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar";
+  LayoutDashboard,
+  CreditCard,
+  Calendar,
+  ShoppingCart,
+  BarChart3,
+  Settings,
+  LogOut,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/AuthContext";
 
-const Sidebar = () => {
-  const location = useLocation();
+type NavItem = {
+  title: string;
+  href: string;
+  icon: React.ReactNode;
+  roles?: string[]; // Roles that can access this item
+};
+
+const navItems: NavItem[] = [
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: <LayoutDashboard className="h-5 w-5" />,
+    roles: ["admin", "manager"]
+  },
+  {
+    title: "Cash Register",
+    href: "/cash-register",
+    icon: <CreditCard className="h-5 w-5" />,
+  },
+  {
+    title: "Court Bookings",
+    href: "/bookings",
+    icon: <Calendar className="h-5 w-5" />,
+  },
+  {
+    title: "Inventory",
+    href: "/inventory",
+    icon: <ShoppingCart className="h-5 w-5" />,
+  },
+  {
+    title: "Reports",
+    href: "/reports",
+    icon: <BarChart3 className="h-5 w-5" />,
+    roles: ["admin", "manager"]
+  },
+  {
+    title: "Settings",
+    href: "/settings",
+    icon: <Settings className="h-5 w-5" />,
+    roles: ["admin", "manager"]
+  },
+];
+
+export default function Sidebar() {
+  const { pathname } = useLocation();
+  const [activeItem, setActiveItem] = useState("");
+  const { logout, user } = useAuth();
   
-  const menuItems = [
-    {
-      title: "Dashboard",
-      icon: <Home className="h-4 w-4" />,
-      path: "/dashboard",
-    },
-    {
-      title: "Cash Register",
-      icon: <CircleDollarSign className="h-4 w-4" />,
-      path: "/cash-register",
-    },
-    {
-      title: "Bookings",
-      icon: <Calendar className="h-4 w-4" />,
-      path: "/bookings",
-    },
-    {
-      title: "Inventory",
-      icon: <Package className="h-4 w-4" />,
-      path: "/inventory",
-    },
-    {
-      title: "Reports",
-      icon: <BarChartBig className="h-4 w-4" />,
-      path: "/reports",
-    },
-    {
-      title: "Settings",
-      icon: <Settings className="h-4 w-4" />,
-      path: "/settings",
-    },
-  ];
+  // Get the user role from the user object
+  const userRole = user?.role || 'cashier';
+
+  useEffect(() => {
+    // Set active nav item based on current pathname
+    setActiveItem(pathname);
+  }, [pathname]);
 
   return (
-    <ShadcnSidebar className="border-r">
-      <SidebarHeader className="flex h-14 items-center px-6 border-b">
-        <Link to="/dashboard" className="flex items-center gap-2 font-semibold">
-          <CircleDollarSign className="h-5 w-5 text-primary" />
-          <span className="font-semibold">Padel Cash</span>
-        </Link>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-          {menuItems.map((item) => (
-            <SidebarMenuItem key={item.path}>
-              <SidebarMenuButton asChild>
+    <ShellSidebar className="border-r bg-muted/40 pb-12">
+      <div className="space-y-4 py-4">
+        <div className="px-3 py-2">
+          <div className="mb-2 px-4 flex h-12 items-center justify-start">
+            <span className="text-xl font-bold">Padel Pro</span>
+          </div>
+          <div className="space-y-1">
+            {navItems.map((item) => {
+              // Skip items that require specific roles if user doesn't have them
+              if (item.roles && !item.roles.includes(userRole)) {
+                return null;
+              }
+              
+              return (
                 <Link
-                  to={item.path}
+                  key={item.href}
+                  to={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all-fast",
-                    location.pathname === item.path
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                    "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+                    activeItem === item.href
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
                   {item.icon}
-                  <span>{item.title}</span>
+                  <span className="ml-3 flex-1">{item.title}</span>
                 </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter className="p-4 text-xs text-sidebar-foreground/50">
-        <div className="text-center">Padel Club Cash Register</div>
-      </SidebarFooter>
-    </ShadcnSidebar>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <div className="mt-auto p-4">
+        <Button
+          variant="ghost"
+          className="w-full justify-start"
+          onClick={() => logout()}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
+      </div>
+    </ShellSidebar>
   );
-};
-
-export default Sidebar;
+}

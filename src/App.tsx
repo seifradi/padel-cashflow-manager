@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import { AuthProvider } from "./context/AuthContext";
 import { DataProvider } from "./context/data";
 import { RequireAuth } from "./components/auth/RequireAuth";
+import { RoleAuth } from "./components/auth/RoleAuth";
 
 const queryClient = new QueryClient();
 
@@ -31,10 +32,12 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               
-              {/* Protected routes */}
+              {/* Protected routes with role-based access */}
               <Route path="/dashboard" element={
                 <RequireAuth>
-                  <Dashboard />
+                  <RoleAuth allowedRoles={["admin", "manager"]}>
+                    <Dashboard />
+                  </RoleAuth>
                 </RequireAuth>
               } />
               <Route path="/cash-register" element={
@@ -54,12 +57,16 @@ const App = () => (
               } />
               <Route path="/reports" element={
                 <RequireAuth>
-                  <Reports />
+                  <RoleAuth allowedRoles={["admin", "manager"]}>
+                    <Reports />
+                  </RoleAuth>
                 </RequireAuth>
               } />
               <Route path="/settings" element={
                 <RequireAuth>
-                  <Settings />
+                  <RoleAuth allowedRoles={["admin", "manager"]}>
+                    <Settings />
+                  </RoleAuth>
                 </RequireAuth>
               } />
               

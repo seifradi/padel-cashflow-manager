@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -6,7 +5,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -50,12 +48,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "../common/StatusBadge";
+import AddProductForm from "./AddProductForm";
 
 const InventoryPage = () => {
   const { products, updateProduct } = useData();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
   const [newStockAmount, setNewStockAmount] = useState(0);
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price'>('name');
@@ -213,7 +213,10 @@ const InventoryPage = () => {
             
             <div className="flex-1"></div>
             
-            <Button className="ml-auto">
+            <Button 
+              className="ml-auto"
+              onClick={() => setIsAddProductDialogOpen(true)}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
@@ -459,6 +462,11 @@ const InventoryPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AddProductForm 
+        isOpen={isAddProductDialogOpen} 
+        onClose={() => setIsAddProductDialogOpen(false)} 
+      />
     </div>
   );
 };

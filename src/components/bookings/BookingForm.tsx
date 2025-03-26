@@ -9,7 +9,6 @@ import { useData } from "@/context/DataContext";
 import {
   COURT_DEFAULT_PRICE,
   PADEL_RENTAL_PRICE,
-  PLAYER_DEFAULT_SHARE,
 } from "@/lib/constants";
 import { BookingType } from "@/lib/types";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,7 +21,7 @@ import BookingSummary from "./form/BookingSummary";
 import { BookingFormSchema, PlayerEntry, BookingFormValues } from "./form/types";
 
 const BookingForm = () => {
-  const { courts, players, addBooking } = useData();
+  const { courts, players, addBooking, bookings } = useData();
   const { user } = useAuth();
   const [selectedPlayers, setSelectedPlayers] = useState<PlayerEntry[]>([]);
   const [totalAmount, setTotalAmount] = useState(0);
@@ -38,7 +37,10 @@ const BookingForm = () => {
   
   const watchCourtPrice = form.watch("courtPrice");
   const watchStartTime = form.watch("startTime");
+  const watchCourtId = form.watch("courtId");
+  const watchDate = form.watch("date");
   
+  // Function to calculate end time including handling 23:00 -> 00:30 next day
   const calculateEndTime = (startTime: string) => {
     if (!startTime) return "";
     
@@ -60,10 +62,24 @@ const BookingForm = () => {
     return `${endHours.toString().padStart(2, "0")}:${endMinutes.toString().padStart(2, "0")}`;
   };
   
+  // Check if the selected court is available at the selected time
+  const isCourtAvailable = () => {
+    if (!watchCourtId || !watchDate || !watchStartTime) return true;
+    
+    const endTime = calculateEndTime(watchStartTime);
+    
+    // Check if there's any booking for the same court, date and time
+    return !bookings.some(booking => 
+      booking.courtId === watchCourtId && 
+      booking.date.toDateString() === watchDate.toDateString() &&
+      booking.startTime === watchStartTime
+    );
+  };
+  
   const handleAddPlayer = () => {
     // Calculate the player share based on court price and number of players
     const playerCount = selectedPlayers.length + 1;
-    const perPlayerCourtShare = watchCourtPrice / playerCount;
+    const perPlayerCourtShare = watchCourtPrice / 4; // Fixed share calculation as per requirement
     
     // Update existing players' shares
     const updatedPlayers = selectedPlayers.map(player => ({
@@ -86,9 +102,9 @@ const BookingForm = () => {
     // Remove the player
     const newPlayers = selectedPlayers.filter((_, i) => i !== index);
     
-    // Recalculate shares if there are remaining players
+    // Recalculate shares for remaining players
     if (newPlayers.length > 0) {
-      const perPlayerCourtShare = watchCourtPrice / newPlayers.length;
+      const perPlayerCourtShare = watchCourtPrice / 4; // Fixed share calculation
       const updatedPlayers = newPlayers.map(player => ({
         ...player,
         playerShare: perPlayerCourtShare
@@ -107,7 +123,7 @@ const BookingForm = () => {
     updatedPlayers[index] = {
       ...updatedPlayers[index],
       playerId,
-      playerShare: player?.specialPrice !== undefined ? player.specialPrice : PLAYER_DEFAULT_SHARE,
+      playerShare: player?.specialPrice !== undefined ? player.specialPrice : watchCourtPrice / 4,
     };
     
     setSelectedPlayers(updatedPlayers);
@@ -128,7 +144,7 @@ const BookingForm = () => {
   // Recalculate player shares when court price changes
   useEffect(() => {
     if (selectedPlayers.length > 0) {
-      const perPlayerCourtShare = watchCourtPrice / selectedPlayers.length;
+      const perPlayerCourtShare = watchCourtPrice / 4; // Fixed share calculation
       const updatedPlayers = selectedPlayers.map(player => ({
         ...player,
         playerShare: perPlayerCourtShare
@@ -138,19 +154,15 @@ const BookingForm = () => {
   }, [watchCourtPrice]);
   
   useEffect(() => {
+    // Total amount is court price plus padel rentals
     const courtPrice = watchCourtPrice || 0;
-    
-    const playerSharesTotal = selectedPlayers.reduce(
-      (sum, player) => sum + player.playerShare,
-      0
-    );
     
     const padelRentalTotal = selectedPlayers.reduce(
       (sum, player) => sum + (player.padelRental ? PADEL_RENTAL_PRICE : 0),
       0
     );
     
-    setTotalAmount(playerSharesTotal + padelRentalTotal);
+    setTotalAmount(courtPrice + padelRentalTotal);
   }, [selectedPlayers, watchCourtPrice]);
   
   const onSubmit = async (data: BookingFormValues) => {
@@ -161,6 +173,11 @@ const BookingForm = () => {
     
     if (selectedPlayers.some(player => !player.playerId)) {
       toast.error("Please select all players");
+      return;
+    }
+    
+    if (!isCourtAvailable()) {
+      toast.error("This court is already booked for the selected time");
       return;
     }
     
@@ -206,6 +223,12 @@ const BookingForm = () => {
           <Card className="p-4">
             <h3 className="text-lg font-semibold mb-4">Court Details</h3>
             <CourtDetails form={form} courts={courts} />
+            
+            {!isCourtAvailable() && (
+              <div className="mt-4 p-2 bg-red-100 text-red-800 rounded-md">
+                This court is already booked for the selected time.
+              </div>
+            )}
           </Card>
           
           <Card className="p-4">
@@ -228,7 +251,11 @@ const BookingForm = () => {
         </div>
         
         <div className="flex justify-end gap-4">
-          <Button type="submit" className="w-full md:w-auto">
+          <Button 
+            type="submit" 
+            className="w-full md:w-auto"
+            disabled={!isCourtAvailable()}
+          >
             Create Booking
           </Button>
         </div>

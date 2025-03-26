@@ -6,6 +6,8 @@ import CourtsSettings from "@/components/settings/CourtsSettings";
 import UsersSettings from "@/components/settings/UsersSettings";
 import PricingSettings from "@/components/settings/PricingSettings";
 import GeneralSettings from "@/components/settings/GeneralSettings";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 const Settings = () => {
   return (
@@ -14,6 +16,15 @@ const Settings = () => {
         title="Settings" 
         subtitle="Configure and personalize your cash register"
       />
+      
+      <Alert variant="info" className="mb-6">
+        <InfoIcon className="h-4 w-4" />
+        <AlertTitle>About User Invitations</AlertTitle>
+        <AlertDescription>
+          For security reasons, inviting users requires the service role key. In a production environment, 
+          this would be handled by a server-side function. For now, you can create users directly from the Supabase dashboard.
+        </AlertDescription>
+      </Alert>
       
       <Tabs defaultValue="general" className="space-y-6">
         <TabsList>
