@@ -10,6 +10,7 @@ interface DailyBalanceContextType {
   getCurrentDailyBalance: () => DailyBalance | undefined;
   startDay: (startingAmount: number, userId: string) => DailyBalance;
   closeDay: (cashInRegister: number, notes: string, userId: string) => DailyBalance;
+  isRegisterOpen: () => boolean;
 }
 
 const DailyBalanceContext = createContext<DailyBalanceContextType | undefined>(undefined);
@@ -30,6 +31,10 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
       balanceDate.setHours(0, 0, 0, 0);
       return balanceDate.getTime() === today.getTime() && !balance.verifiedAt;
     });
+  };
+
+  const isRegisterOpen = () => {
+    return !!getCurrentDailyBalance();
   };
 
   const calculateDailyTotal = () => {
@@ -96,6 +101,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
       difference,
       notes,
       closedBy: userId,
+      verifiedAt: new Date(), // Mark as verified when closed
       closedAt: new Date()
     } as DailyBalance;
     
@@ -111,7 +117,8 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
       dailyBalances,
       getCurrentDailyBalance,
       startDay,
-      closeDay
+      closeDay,
+      isRegisterOpen
     }}>
       {children}
     </DailyBalanceContext.Provider>

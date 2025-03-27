@@ -44,3 +44,25 @@ export function calculateProfitMargin(price: number, cost: number): number {
 export function generateProductCode(): string {
   return `PROD-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
 }
+
+export function isToday(date: Date): boolean {
+  const today = new Date()
+  return date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+}
+
+export function calculateDifference(amount1: number, amount2: number): {
+  difference: number,
+  isShortage: boolean,
+  isExcess: boolean,
+  isBalanced: boolean
+} {
+  const difference = Math.abs(amount1 - amount2)
+  return {
+    difference,
+    isShortage: amount1 > amount2,
+    isExcess: amount1 < amount2,
+    isBalanced: Math.abs(amount1 - amount2) < 0.5
+  }
+}
