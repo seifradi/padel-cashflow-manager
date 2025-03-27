@@ -1,11 +1,14 @@
 
 import { Product, Sale } from "@/lib/types";
-import { ReactNode, createContext, useContext, useState } from "react";
+import { ReactNode, createContext, useContext, useState, useEffect } from "react";
 import { useProducts } from "./ProductContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface SaleContextType {
   sales: Sale[];
-  addSale: (sale: Omit<Sale, 'id'>) => Sale;
+  addSale: (sale: Omit<Sale, 'id'>) => Promise<Sale>;
+  refreshSales: () => Promise<void>;
 }
 
 const SaleContext = createContext<SaleContextType | undefined>(undefined);
@@ -13,30 +16,117 @@ const SaleContext = createContext<SaleContextType | undefined>(undefined);
 export const SaleProvider = ({ children }: { children: ReactNode }) => {
   const [sales, setSales] = useState<Sale[]>([]);
   const { products, updateProduct } = useProducts();
+  const { toast } = useToast();
 
-  const addSale = (sale: Omit<Sale, 'id'>) => {
-    const newSale = {
-      ...sale,
-      id: `sale-${Date.now()}`
-    };
-    setSales([...sales, newSale]);
-    
-    // Update product stock
-    sale.products.forEach(item => {
-      const product = products.find(p => p.id === item.productId);
-      if (product) {
-        updateProduct({
-          ...product,
-          stock: product.stock - item.quantity
-        });
+  // Fetch sales when component mounts
+  useEffect(() => {
+    refreshSales();
+  }, []);
+
+  const refreshSales = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sales')
+        .select(`
+          *,
+          sale_items:sale_items(*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform the data to match our Sale type
+      const formattedSales: Sale[] = data.map(sale => ({
+        id: sale.id,
+        totalAmount: sale.total_amount,
+        paymentMethod: sale.payment_method as 'cash' | 'card' | 'transfer',
+        createdBy: sale.created_by || '',
+        createdAt: new Date(sale.created_at),
+        notes: sale.notes || undefined,
+        products: (sale.sale_items || []).map((item: any) => ({
+          productId: item.product_id,
+          quantity: item.quantity,
+          price: item.price
+        }))
+      }));
+
+      setSales(formattedSales);
+    } catch (error: any) {
+      console.error('Error fetching sales:', error);
+      toast({
+        title: "Error fetching sales",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addSale = async (sale: Omit<Sale, 'id'>) => {
+    try {
+      // First, insert the sale
+      const { data: saleData, error: saleError } = await supabase
+        .from('sales')
+        .insert([{
+          total_amount: sale.totalAmount,
+          payment_method: sale.paymentMethod,
+          created_by: sale.createdBy,
+          notes: sale.notes
+        }])
+        .select('*')
+        .single();
+
+      if (saleError) throw saleError;
+
+      // Then, insert the sale items
+      const saleItems = sale.products.map(item => ({
+        sale_id: saleData.id,
+        product_id: item.productId,
+        quantity: item.quantity,
+        price: item.price
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('sale_items')
+        .insert(saleItems);
+
+      if (itemsError) throw itemsError;
+
+      // Update product stock for each item
+      for (const item of sale.products) {
+        const product = products.find(p => p.id === item.productId);
+        if (product) {
+          const newStock = Math.max(0, product.stock - item.quantity);
+          await updateProduct({
+            ...product,
+            stock: newStock
+          });
+        }
       }
-    });
-    
-    return newSale;
+
+      // Create a new sale object with the id
+      const newSale: Sale = {
+        ...sale,
+        id: saleData.id,
+        createdAt: new Date(saleData.created_at)
+      };
+
+      // Add the new sale to the state
+      setSales(prevSales => [newSale, ...prevSales]);
+
+      return newSale;
+    } catch (error: any) {
+      console.error('Error adding sale:', error);
+      toast({
+        title: "Error adding sale",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   return (
-    <SaleContext.Provider value={{ sales, addSale }}>
+    <SaleContext.Provider value={{ sales, addSale, refreshSales }}>
       {children}
     </SaleContext.Provider>
   );

@@ -9,11 +9,10 @@ import { Link } from "react-router-dom";
 
 const Bookings = () => {
   const { isRegisterOpen } = useData();
-  const registerOpen = isRegisterOpen();
   
   return (
     <Layout title="Court Bookings">
-      {registerOpen ? (
+      {isRegisterOpen() ? (
         <BookingForm />
       ) : (
         <div className="space-y-6 max-w-lg mx-auto text-center p-6">

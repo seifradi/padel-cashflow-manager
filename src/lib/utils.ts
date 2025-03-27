@@ -66,3 +66,53 @@ export function calculateDifference(amount1: number, amount2: number): {
     isBalanced: Math.abs(amount1 - amount2) < 0.5
   }
 }
+
+export function calculateDailyTotals(
+  sales: any[], 
+  bookings: any[], 
+  expenses: any[], 
+  startingAmount: number = 0
+) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Filter today's transactions
+  const todaySales = sales.filter(sale => {
+    const saleDate = new Date(sale.createdAt);
+    saleDate.setHours(0, 0, 0, 0);
+    return saleDate.getTime() === today.getTime();
+  });
+  
+  const todayBookings = bookings.filter(booking => {
+    const bookingDate = new Date(booking.date);
+    bookingDate.setHours(0, 0, 0, 0);
+    return bookingDate.getTime() === today.getTime();
+  });
+  
+  const todayExpenses = expenses.filter(expense => {
+    const expenseDate = new Date(expense.createdAt);
+    expenseDate.setHours(0, 0, 0, 0);
+    return expenseDate.getTime() === today.getTime();
+  });
+  
+  // Calculate totals
+  const salesTotal = todaySales.reduce((total, sale) => total + sale.totalAmount, 0);
+  const bookingsTotal = todayBookings.reduce((total, booking) => total + booking.totalAmount, 0);
+  const expensesTotal = todayExpenses.reduce((total, expense) => total + expense.amount, 0);
+  
+  const totalRevenue = salesTotal + bookingsTotal;
+  const netAmount = totalRevenue - expensesTotal;
+  const expectedCash = startingAmount + netAmount;
+  
+  return {
+    salesTotal,
+    bookingsTotal,
+    expensesTotal,
+    totalRevenue,
+    netAmount,
+    expectedCash,
+    salesCount: todaySales.length,
+    bookingsCount: todayBookings.length,
+    expensesCount: todayExpenses.length
+  };
+}

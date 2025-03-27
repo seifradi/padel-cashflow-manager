@@ -2,39 +2,48 @@
 import { cn } from "@/lib/utils";
 import { ReactNode } from "react";
 
-interface CardProps {
+export interface CardProps {
   title?: string;
   subtitle?: string;
   children: ReactNode;
   className?: string;
   contentClassName?: string;
   noPadding?: boolean;
+  icon?: ReactNode;
 }
 
-const Card = ({ 
-  title, 
-  subtitle, 
-  children, 
-  className, 
+const Card = ({
+  title,
+  subtitle,
+  children,
+  className,
   contentClassName,
-  noPadding = false 
+  noPadding = false,
+  icon,
 }: CardProps) => {
   return (
-    <div className={cn(
-      "bg-card rounded-lg border shadow-sm animate-fade-in",
-      className
-    )}>
+    <div
+      className={cn(
+        "bg-card rounded-lg border shadow-sm",
+        className
+      )}
+    >
       {(title || subtitle) && (
-        <div className="p-4 pb-2">
-          {title && <h3 className="text-lg font-semibold">{title}</h3>}
-          {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+        <div className="p-6 pb-0">
+          {title && (
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-lg font-semibold flex items-center">
+                {icon && <span className="mr-2">{icon}</span>}
+                {title}
+              </h3>
+            </div>
+          )}
+          {subtitle && (
+            <p className="text-sm text-muted-foreground mb-4">{subtitle}</p>
+          )}
         </div>
       )}
-      <div className={cn(
-        contentClassName,
-        !noPadding && "p-4",
-        title && !noPadding && "pt-2"
-      )}>
+      <div className={cn(noPadding ? "" : "p-6", contentClassName)}>
         {children}
       </div>
     </div>
