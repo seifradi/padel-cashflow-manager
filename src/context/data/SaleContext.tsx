@@ -17,7 +17,8 @@ const SaleContext = createContext<SaleContextType | undefined>(undefined);
 export const SaleProvider = ({ children }: { children: ReactNode }) => {
   const [sales, setSales] = useState<Sale[]>([]);
   const { products, updateProduct, refreshProducts } = useProducts();
-  const { translations } = useLanguage();
+  // Remove direct useLanguage call here
+  // Instead, we'll use direct text strings and handle translations at the component level
   
   // Fetch sales when component mounts
   useEffect(() => {
@@ -54,7 +55,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
       setSales(formattedSales);
     } catch (error: any) {
       console.error('Error fetching sales:', error);
-      toast.error(`${translations.errorFetchingSales || "Error fetching sales"}: ${error.message}`);
+      toast.error(`Error fetching sales: ${error.message}`);
     }
   };
 
@@ -67,7 +68,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (!stockCheck) {
-        throw new Error(translations.notEnoughStock || "Not enough stock for some products");
+        throw new Error("Not enough stock for some products");
       }
       
       // First, insert the sale
@@ -126,12 +127,12 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
       // Add the new sale to the state
       setSales(prevSales => [newSale, ...prevSales]);
 
-      toast.success(translations.saleCompleted || "Sale completed successfully");
+      toast.success("Sale completed successfully");
 
       return newSale;
     } catch (error: any) {
       console.error('Error adding sale:', error);
-      toast.error(`${translations.failedToCompleteSale || "Error adding sale"}: ${error.message}`);
+      toast.error(`Error adding sale: ${error.message}`);
       throw error;
     }
   };

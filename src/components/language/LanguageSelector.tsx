@@ -17,6 +17,7 @@ const LanguageSelector = () => {
     setLanguage(lang);
     const langName = lang === 'en' ? 'English' : 'Français';
     toast.success(`Language changed to ${langName}`);
+    console.log(`Language changed to: ${lang}`);
   };
 
   return (
