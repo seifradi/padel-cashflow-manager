@@ -3,8 +3,8 @@ import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "./context/AuthContext";
-import { DataProvider } from "./context/DataContext";
 import { LanguageProvider } from "./context/LanguageContext";
+import { DataProvider } from "./context/DataContext";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { RoleAuth } from "./components/auth/RoleAuth";
 

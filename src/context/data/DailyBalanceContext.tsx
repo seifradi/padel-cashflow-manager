@@ -121,6 +121,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
 
   const startDay = async (startingAmount: number, userId: string) => {
     try {
+      console.log("Starting day with amount:", startingAmount, "userId:", userId);
       const today = new Date();
       
       // Insert new daily balance record into Supabase
@@ -138,7 +139,10 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
         .select('*')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
       
       // Convert to our app's DailyBalance type
       const newBalance: DailyBalance = {
@@ -151,6 +155,8 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
         closedBy: data.closed_by,
         closedAt: new Date(data.closed_at)
       };
+      
+      console.log("Successfully created new balance:", newBalance);
       
       // Update local state
       setDailyBalances(prevBalances => [newBalance, ...prevBalances]);

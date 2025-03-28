@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   Tabs,
@@ -30,11 +29,13 @@ import CloseRegisterDialog from "./CloseRegisterDialog";
 import RegisterSummary from "./RegisterSummary";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useLanguage } from "@/context/LanguageContext";
+import { useNavigate } from "react-router-dom";
 
 const CashRegisterPage = () => {
   const { user } = useAuth();
   const { isRegisterOpen, getCurrentDailyBalance, startDay, refreshDailyBalances } = useData();
   const { translations } = useLanguage();
+  const navigate = useNavigate();
   
   const [isInitializing, setIsInitializing] = useState(false);
   const [isCloseDialogOpen, setIsCloseDialogOpen] = useState(false);
@@ -67,7 +68,14 @@ const CashRegisterPage = () => {
     setIsInitializing(true);
     
     try {
-      const result = await startDay(startingAmount, user?.id || "");
+      console.log("Starting day with userId:", user?.id);
+      if (!user?.id) {
+        toast.error(translations.userNotAuthenticated || "User not authenticated");
+        setIsInitializing(false);
+        return;
+      }
+
+      const result = await startDay(startingAmount, user.id);
       console.log("Register initialized with result:", result);
       toast.success(translations.registerInitialized || "Cash register initialized successfully");
       
@@ -75,6 +83,9 @@ const CashRegisterPage = () => {
       await refreshDailyBalances();
       setRegisterState(true);
       setIsInitializing(false);
+      
+      // Redirect to dashboard after successful initialization
+      navigate("/dashboard");
     } catch (error: any) {
       console.error("Error initializing register:", error);
       toast.error(translations.failedToInitializeRegister || "Failed to initialize cash register");
