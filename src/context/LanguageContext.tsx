@@ -29,14 +29,16 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('language', language);
     // Update HTML lang attribute
     document.documentElement.lang = language;
+    console.log(`Language changed to: ${language}`);
   }, [language]);
 
   const setLanguage = (lang: Language) => {
+    console.log(`Setting language to: ${lang}`);
     setLanguageState(lang);
   };
 
   // Get translations for current language
-  const currentTranslations = translations[language];
+  const currentTranslations = translations[language] || translations['en'];
 
   // Format currency based on language
   const formatCurrency = (amount: number): string => {

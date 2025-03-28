@@ -5,8 +5,9 @@ import { useBookings } from "./BookingContext";
 import { useSales } from "./SaleContext";
 import { useExpenses } from "./ExpenseContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface DailyBalanceContextType {
   dailyBalances: DailyBalance[];
@@ -24,7 +25,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
   const { bookings, refreshBookings } = useBookings();
   const { sales, refreshSales } = useSales();
   const { expenses, refreshExpenses } = useExpenses();
-  const { toast } = useToast();
+  const { translations } = useLanguage();
   const { isAuthenticated } = useAuth();
 
   // Fetch daily balances from Supabase when component mounts
@@ -74,11 +75,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
       setDailyBalances(typedBalances);
     } catch (error: any) {
       console.error('Error fetching daily balances:', error);
-      toast({
-        title: "Error fetching daily balances",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(`${translations.errorFetchingDailyBalances || "Error fetching daily balances"}: ${error.message}`);
     }
   };
 
@@ -169,11 +166,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
       return newBalance;
     } catch (error: any) {
       console.error('Error starting day:', error);
-      toast({
-        title: "Error starting day",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(`${translations.failedToInitializeRegister || "Error starting day"}: ${error.message}`);
       throw error;
     }
   };
@@ -186,7 +179,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
       const currentBalance = getCurrentDailyBalance();
       
       if (!currentBalance) {
-        throw new Error("No open register found for today");
+        throw new Error(translations.noOpenRegister || "No open register found for today");
       }
       
       const calculatedAmount = (currentBalance.startingAmount || 0) + calculateDailyTotal();
@@ -234,11 +227,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
       return updatedBalance;
     } catch (error: any) {
       console.error('Error closing day:', error);
-      toast({
-        title: "Error closing day",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(`${translations.failedToCloseRegister || "Error closing day"}: ${error.message}`);
       throw error;
     }
   };

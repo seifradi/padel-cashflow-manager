@@ -3,7 +3,8 @@ import { Product, Sale } from "@/lib/types";
 import { ReactNode, createContext, useContext, useState, useEffect } from "react";
 import { useProducts } from "./ProductContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface SaleContextType {
   sales: Sale[];
@@ -16,8 +17,8 @@ const SaleContext = createContext<SaleContextType | undefined>(undefined);
 export const SaleProvider = ({ children }: { children: ReactNode }) => {
   const [sales, setSales] = useState<Sale[]>([]);
   const { products, updateProduct, refreshProducts } = useProducts();
-  const { toast } = useToast();
-
+  const { translations } = useLanguage();
+  
   // Fetch sales when component mounts
   useEffect(() => {
     refreshSales();
@@ -53,16 +54,22 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
       setSales(formattedSales);
     } catch (error: any) {
       console.error('Error fetching sales:', error);
-      toast({
-        title: "Error fetching sales",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(`${translations.errorFetchingSales || "Error fetching sales"}: ${error.message}`);
     }
   };
 
   const addSale = async (sale: Omit<Sale, 'id'>) => {
     try {
+      // Check if all products have enough stock
+      const stockCheck = sale.products.every(item => {
+        const product = products.find(p => p.id === item.productId);
+        return product && product.stock >= item.quantity;
+      });
+      
+      if (!stockCheck) {
+        throw new Error(translations.notEnoughStock || "Not enough stock for some products");
+      }
+      
       // First, insert the sale
       const { data: saleData, error: saleError } = await supabase
         .from('sales')
@@ -119,19 +126,12 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
       // Add the new sale to the state
       setSales(prevSales => [newSale, ...prevSales]);
 
-      toast({
-        title: "Sale completed",
-        description: "Product stock has been updated",
-      });
+      toast.success(translations.saleCompleted || "Sale completed successfully");
 
       return newSale;
     } catch (error: any) {
       console.error('Error adding sale:', error);
-      toast({
-        title: "Error adding sale",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(`${translations.failedToCompleteSale || "Error adding sale"}: ${error.message}`);
       throw error;
     }
   };

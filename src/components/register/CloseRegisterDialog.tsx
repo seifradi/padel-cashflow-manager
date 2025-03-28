@@ -1,5 +1,5 @@
+
 import { useState, useEffect } from "react";
-import { formatCurrency } from "@/lib/utils";
 import { useData } from "@/context/DataContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";

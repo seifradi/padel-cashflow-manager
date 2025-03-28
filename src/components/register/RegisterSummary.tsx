@@ -1,11 +1,12 @@
 
 import { useData } from "@/context/DataContext";
 import Card from "../common/Card";
-import { formatCurrency } from "@/lib/utils";
 import { CalendarDays, ShoppingCart, ReceiptText, CircleDollarSign } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 const RegisterSummary = () => {
   const { sales, bookings, expenses, getCurrentDailyBalance } = useData();
+  const { translations, formatCurrency } = useLanguage();
   const currentBalance = getCurrentDailyBalance();
   
   if (!currentBalance) return null;
@@ -43,25 +44,25 @@ const RegisterSummary = () => {
   
   const summaryCards = [
     {
-      title: "Court Bookings",
+      title: translations.courtBookings || "Court Bookings",
       amount: bookingsTotal,
       count: todayBookings.length,
       icon: <CalendarDays className="h-4 w-4 text-blue-500" />,
     },
     {
-      title: "Product Sales",
+      title: translations.productSales || "Product Sales",
       amount: salesTotal,
       count: todaySales.length,
       icon: <ShoppingCart className="h-4 w-4 text-green-500" />,
     },
     {
-      title: "Expenses",
+      title: translations.expenses || "Expenses",
       amount: expensesTotal,
       count: todayExpenses.length,
       icon: <ReceiptText className="h-4 w-4 text-yellow-500" />,
     },
     {
-      title: "Expected Cash",
+      title: translations.expectedAmount || "Expected Cash",
       amount: expectedCash,
       highlight: true,
       icon: <CircleDollarSign className="h-4 w-4 text-primary" />,
@@ -85,7 +86,9 @@ const RegisterSummary = () => {
           </p>
           {card.count !== undefined && (
             <p className="text-xs text-muted-foreground mt-1">
-              {card.count} transaction{card.count !== 1 ? 's' : ''}
+              {card.count} {card.count !== 1 ? 
+                (translations.transactions || "transactions") : 
+                (translations.transaction || "transaction")}
             </p>
           )}
         </Card>

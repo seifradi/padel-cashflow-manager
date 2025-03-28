@@ -38,11 +38,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
       setExpenses(typedExpenses);
     } catch (error: any) {
       console.error('Error fetching expenses:', error);
-      toast({
-        title: "Error fetching expenses",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast.error(`Error fetching expenses: ${error.message}`);
     }
   };
 
