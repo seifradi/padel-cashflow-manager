@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +32,7 @@ const SalesForm = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Refresh products when component mounts to ensure latest stock
   useEffect(() => {
@@ -126,6 +126,8 @@ const SalesForm = () => {
     }
     
     try {
+      setIsProcessing(true);
+      
       const sale = {
         products: cart.map(item => ({
           productId: item.productId,
@@ -152,6 +154,8 @@ const SalesForm = () => {
     } catch (error) {
       toast.error("Failed to complete sale");
       console.error(error);
+    } finally {
+      setIsProcessing(false);
     }
   };
   
@@ -303,9 +307,9 @@ const SalesForm = () => {
                 <Button
                   className="w-full"
                   onClick={handleCheckout}
-                  disabled={cart.length === 0}
+                  disabled={cart.length === 0 || isProcessing}
                 >
-                  Complete Sale
+                  {isProcessing ? "Processing..." : "Complete Sale"}
                 </Button>
               </div>
             </div>

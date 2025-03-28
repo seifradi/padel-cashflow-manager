@@ -92,7 +92,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
       if (itemsError) throw itemsError;
 
       // Update product stock for each item
-      for (const item of sale.products) {
+      const stockUpdatePromises = sale.products.map(async (item) => {
         const product = products.find(p => p.id === item.productId);
         if (product) {
           const newStock = Math.max(0, product.stock - item.quantity);
@@ -101,8 +101,11 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
             stock: newStock
           });
         }
-      }
+      });
 
+      // Wait for all stock updates to complete
+      await Promise.all(stockUpdatePromises);
+      
       // Refresh products list to get updated stock values
       await refreshProducts();
 
