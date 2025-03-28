@@ -14,6 +14,8 @@ export function formatDate(date: Date): string {
   }).format(date)
 }
 
+// This is kept for backward compatibility
+// New components should use the useLanguage hook instead
 export function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

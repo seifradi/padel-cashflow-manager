@@ -84,7 +84,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         toast({
           title: "Low Stock Warning",
           description: `${updatedProduct.name} is running low on stock (${updatedProduct.stock} left)`,
-          variant: "warning",
+          variant: "default",
         });
       } else if (updatedProduct.stock === 0) {
         toast({
