@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "./context/AuthContext";
@@ -29,14 +29,14 @@ function App() {
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/auth" element={<Auth />} />
                 
-                <Route element={<RequireAuth />}>
+                <Route element={<RequireAuth><Outlet /></RequireAuth>}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/bookings" element={<Bookings />} />
                   <Route path="/inventory" element={<Inventory />} />
                   <Route path="/cash-register" element={<CashRegister />} />
                   <Route path="/reports" element={<Reports />} />
                   
-                  <Route element={<RoleAuth allowedRoles={['admin', 'manager']} />}>
+                  <Route element={<RoleAuth allowedRoles={['admin', 'manager']}><Outlet /></RoleAuth>}>
                     <Route path="/settings" element={<Settings />} />
                   </Route>
                 </Route>
