@@ -13,20 +13,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/components/ui/theme-provider";
 import LanguageSelector from "../language/LanguageSelector";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface HeaderProps {
-  title: string;
+  title?: string;
   onMenuClick: () => void;
 }
 
-const Header = ({ title, onMenuClick }: HeaderProps) => {
+const Header = ({ title = "", onMenuClick }: HeaderProps) => {
   const { user, logout } = useAuth();
   const { setTheme, theme } = useTheme();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { translations } = useLanguage();
 

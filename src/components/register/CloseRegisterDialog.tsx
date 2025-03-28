@@ -43,7 +43,7 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
     
     try {
       setIsClosing(true);
-      const result = closeDay(closingAmount, closingNotes, user.id);
+      const result = await closeDay(closingAmount, closingNotes, user.id);
       
       if (Math.abs(result.difference) > 0.5) {
         const diffType = result.difference > 0 ? "excess" : "shortage";

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
 import CashRegisterReports from "./CashRegisterReports";
 import { useLanguage } from "@/context/LanguageContext";
-import { BarChart3, CashRegister, ShoppingCart } from "lucide-react";
+import { BarChart3, DollarSign, ShoppingCart } from "lucide-react";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088fe"];
 
@@ -19,20 +18,15 @@ const ReportsPage = () => {
   const [productData, setProductData] = useState<any[]>([]);
   const { formatCurrency, translations } = useLanguage();
 
-  // Calculate total revenue
   const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0) +
     bookings.reduce((sum, booking) => sum + booking.totalAmount, 0);
 
-  // Calculate total expenses
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
-  // Calculate total profit
   const totalProfit = totalRevenue - totalExpenses;
 
-  // Calculate total bookings
   const totalBookingsCount = bookings.length;
 
-  // Generate daily revenue data for the past 30 days
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = subDays(today, 30);
@@ -65,10 +59,7 @@ const ReportsPage = () => {
     setDailyData(data);
   }, [bookings, sales]);
 
-  // Generate sales by product category data
   useEffect(() => {
-    // This would need to be enhanced with real sale item data
-    // For now, just create sample data based on sales count
     const sampleCategories = [
       { name: translations.drinks, value: sales.length * 0.4 },
       { name: translations.food, value: sales.length * 0.3 },
@@ -79,10 +70,7 @@ const ReportsPage = () => {
     setSalesData(sampleCategories);
   }, [sales, translations]);
 
-  // Generate most popular products data
   useEffect(() => {
-    // This would need to be enhanced with real sale item data
-    // For now, just create sample data
     const sampleProducts = [
       { name: translations.water, sales: bookings.length * 2 },
       { name: translations.soda, sales: bookings.length * 1.5 },
@@ -173,7 +161,7 @@ const ReportsPage = () => {
             {translations.products}
           </TabsTrigger>
           <TabsTrigger value="cashRegister" className="flex items-center gap-2">
-            <CashRegister className="h-4 w-4" />
+            <DollarSign className="h-4 w-4" />
             {translations.cashRegister}
           </TabsTrigger>
         </TabsList>
@@ -267,7 +255,7 @@ const ReportsPage = () => {
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={dailyData.slice(-14)} // Last 14 days
+                    data={dailyData.slice(-14)}
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
