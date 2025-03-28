@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { useData } from "@/context/DataContext";
@@ -26,7 +25,7 @@ interface CloseRegisterDialogProps {
 
 const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
   const { user } = useAuth();
-  const { getCurrentDailyBalance, closeDay, refreshSales, refreshBookings, refreshExpenses } = useData();
+  const { getCurrentDailyBalance, closeDay, refreshSales, refreshBookings } = useData();
   const { translations, formatCurrency } = useLanguage();
   
   const [closingAmount, setClosingAmount] = useState(0);
@@ -44,9 +43,8 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
       // Refresh all data to make sure we have the latest
       refreshSales();
       refreshBookings();
-      refreshExpenses();
     }
-  }, [isOpen, refreshSales, refreshBookings, refreshExpenses]);
+  }, [isOpen, refreshSales, refreshBookings]);
   
   const handleClose = async () => {
     if (!currentBalance || !user?.id) return;
