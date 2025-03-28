@@ -1,9 +1,6 @@
 
 import { DailyBalance } from "@/lib/types";
 import { ReactNode, createContext, useContext, useState, useEffect } from "react";
-import { useBookings } from "./BookingContext";
-import { useSales } from "./SaleContext";
-import { useExpenses } from "./ExpenseContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
@@ -22,31 +19,15 @@ const DailyBalanceContext = createContext<DailyBalanceContextType | undefined>(u
 
 export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
   const [dailyBalances, setDailyBalances] = useState<DailyBalance[]>([]);
-  const { bookings, refreshBookings } = useBookings();
-  const { sales, refreshSales } = useSales();
-  const { expenses, refreshExpenses } = useExpenses();
   const { translations } = useLanguage();
   const { isAuthenticated } = useAuth();
 
   // Fetch daily balances from Supabase when component mounts
   useEffect(() => {
     if (isAuthenticated) {
-      refreshAllData();
+      refreshDailyBalances();
     }
   }, [isAuthenticated]);
-
-  const refreshAllData = async () => {
-    try {
-      await Promise.all([
-        refreshDailyBalances(),
-        refreshSales(),
-        refreshBookings(),
-        refreshExpenses()
-      ]);
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-    }
-  };
 
   const refreshDailyBalances = async () => {
     try {
@@ -95,36 +76,47 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
     return !!getCurrentDailyBalance();
   };
 
-  const calculateDailyTotal = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Calculate sales for today
-    const todaySales = sales.filter(sale => {
-      const saleDate = new Date(sale.createdAt);
-      saleDate.setHours(0, 0, 0, 0);
-      return saleDate.getTime() === today.getTime();
-    });
-    
-    // Calculate earnings from today's court bookings
-    const todayBookings = bookings.filter(booking => {
-      const bookingDate = new Date(booking.date);
-      bookingDate.setHours(0, 0, 0, 0);
-      return bookingDate.getTime() === today.getTime();
-    });
-    
-    // Calculate expenses for today
-    const todayExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.createdAt);
-      expenseDate.setHours(0, 0, 0, 0);
-      return expenseDate.getTime() === today.getTime();
-    });
-    
-    const salesTotal = todaySales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-    const bookingsTotal = todayBookings.reduce((sum, booking) => sum + booking.totalAmount, 0);
-    const expensesTotal = todayExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-    
-    return salesTotal + bookingsTotal - expensesTotal;
+  const calculateDailyTotal = async () => {
+    try {
+      // Fetch today's sales directly from Supabase
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      // Get sales for today
+      const { data: salesData, error: salesError } = await supabase
+        .from('sales')
+        .select('total_amount')
+        .gte('created_at', `${todayStr}T00:00:00`)
+        .lte('created_at', `${todayStr}T23:59:59`);
+      
+      if (salesError) throw salesError;
+      
+      // Get bookings for today
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('total_amount')
+        .eq('date', todayStr);
+      
+      if (bookingsError) throw bookingsError;
+      
+      // Get expenses for today
+      const { data: expensesData, error: expensesError } = await supabase
+        .from('expenses')
+        .select('amount')
+        .gte('created_at', `${todayStr}T00:00:00`)
+        .lte('created_at', `${todayStr}T23:59:59`);
+      
+      if (expensesError) throw expensesError;
+      
+      const salesTotal = salesData?.reduce((sum, sale) => sum + sale.total_amount, 0) || 0;
+      const bookingsTotal = bookingsData?.reduce((sum, booking) => sum + booking.total_amount, 0) || 0;
+      const expensesTotal = expensesData?.reduce((sum, expense) => sum + expense.amount, 0) || 0;
+      
+      return salesTotal + bookingsTotal - expensesTotal;
+    } catch (error) {
+      console.error("Error calculating daily total:", error);
+      return 0;
+    }
   };
 
   const startDay = async (startingAmount: number, userId: string) => {
@@ -173,8 +165,8 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
 
   const closeDay = async (cashInRegister: number, notes: string, userId: string) => {
     try {
-      // Refresh all data to make sure calculations are accurate
-      await refreshAllData();
+      // Refresh balances to make sure we have the latest data
+      await refreshDailyBalances();
       
       const currentBalance = getCurrentDailyBalance();
       
@@ -182,7 +174,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
         throw new Error(translations.noOpenRegister || "No open register found for today");
       }
       
-      const calculatedAmount = (currentBalance.startingAmount || 0) + calculateDailyTotal();
+      const calculatedAmount = (currentBalance.startingAmount || 0) + await calculateDailyTotal();
       const difference = cashInRegister - calculatedAmount;
       
       // Update the daily balance record in Supabase

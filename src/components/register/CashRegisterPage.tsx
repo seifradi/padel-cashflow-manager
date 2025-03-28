@@ -46,7 +46,9 @@ const CashRegisterPage = () => {
     // Fetch current register state when component mounts
     const fetchRegisterState = async () => {
       await refreshDailyBalances();
-      setRegisterState(isRegisterOpen());
+      const isOpen = isRegisterOpen();
+      setRegisterState(isOpen);
+      console.log("Register state on mount:", isOpen);
     };
     
     fetchRegisterState();
@@ -65,9 +67,12 @@ const CashRegisterPage = () => {
     setIsInitializing(true);
     
     try {
-      await startDay(startingAmount, user?.id || "");
+      const result = await startDay(startingAmount, user?.id || "");
+      console.log("Register initialized with result:", result);
       toast.success(translations.registerInitialized || "Cash register initialized successfully");
-      // Refresh register state after initialization
+      
+      // Force refresh register state after initialization
+      await refreshDailyBalances();
       setRegisterState(true);
       setIsInitializing(false);
     } catch (error: any) {

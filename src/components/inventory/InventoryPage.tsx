@@ -1,13 +1,12 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useData } from "@/context/DataContext";
 import { PRODUCT_CATEGORIES } from "@/lib/constants";
 import { 
   Package, 
-  Plus, 
   AlertCircle,
   ShoppingCart,
   ArrowUpDown,
-  Download,
   RefreshCw
 } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -48,13 +47,26 @@ const InventoryPage = () => {
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   useEffect(() => {
-    refreshProductsData();
+    const initialLoad = async () => {
+      setIsRefreshing(true);
+      try {
+        await refreshProducts();
+        setInitialLoadComplete(true);
+      } catch (error) {
+        console.error("Error loading inventory data:", error);
+      } finally {
+        setIsRefreshing(false);
+      }
+    };
+    
+    initialLoad();
     
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshProductsData();
+      if (document.visibilityState === 'visible' && initialLoadComplete) {
+        refreshProductsData(false); // Silent refresh when returning to tab
       }
     };
     
@@ -65,11 +77,15 @@ const InventoryPage = () => {
     };
   }, [refreshProducts]);
   
-  const refreshProductsData = async () => {
+  const refreshProductsData = async (showToast = true) => {
+    if (isRefreshing) return;
+    
     setIsRefreshing(true);
     try {
       await refreshProducts();
-      toast.success("Inventory data refreshed");
+      if (showToast) {
+        toast.success("Inventory data refreshed");
+      }
     } catch (error) {
       console.error("Error refreshing inventory data:", error);
     } finally {
@@ -194,7 +210,7 @@ const InventoryPage = () => {
         <Button 
           variant="outline" 
           size="sm"
-          onClick={refreshProductsData}
+          onClick={() => refreshProductsData(true)}
           disabled={isRefreshing}
           className="flex items-center gap-1"
         >
