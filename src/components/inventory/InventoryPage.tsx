@@ -48,9 +48,26 @@ const InventoryPage = () => {
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
-  // Refresh products when component mounts
+  // Refresh products when component mounts and when it becomes visible
   useEffect(() => {
-    refreshProducts();
+    const fetchProducts = async () => {
+      await refreshProducts();
+    };
+    
+    fetchProducts();
+    
+    // Add event listener to refresh products when tab becomes visible
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchProducts();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [refreshProducts]);
   
   // Filter products by search term, category, and stock status

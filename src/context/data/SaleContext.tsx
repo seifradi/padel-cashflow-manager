@@ -15,7 +15,7 @@ const SaleContext = createContext<SaleContextType | undefined>(undefined);
 
 export const SaleProvider = ({ children }: { children: ReactNode }) => {
   const [sales, setSales] = useState<Sale[]>([]);
-  const { products, updateProduct } = useProducts();
+  const { products, updateProduct, refreshProducts } = useProducts();
   const { toast } = useToast();
 
   // Fetch sales when component mounts
@@ -103,6 +103,9 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
+      // Refresh products list to get updated stock values
+      await refreshProducts();
+
       // Create a new sale object with the id
       const newSale: Sale = {
         ...sale,
@@ -112,6 +115,11 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
 
       // Add the new sale to the state
       setSales(prevSales => [newSale, ...prevSales]);
+
+      toast({
+        title: "Sale completed",
+        description: "Product stock has been updated",
+      });
 
       return newSale;
     } catch (error: any) {

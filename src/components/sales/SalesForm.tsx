@@ -14,7 +14,7 @@ import { useData } from "@/context/DataContext";
 import { PAYMENT_METHODS, PRODUCT_CATEGORIES } from "@/lib/constants";
 import { ProductCategory } from "@/lib/types";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Card from "../common/Card";
 import AmountInput from "../common/AmountInput";
@@ -27,12 +27,17 @@ interface CartItem {
 }
 
 const SalesForm = () => {
-  const { products, addSale } = useData();
+  const { products, addSale, refreshProducts } = useData();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | "all">("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  
+  // Refresh products when component mounts to ensure latest stock
+  useEffect(() => {
+    refreshProducts();
+  }, [refreshProducts]);
   
   // Filter products by category
   const filteredProducts = selectedCategory === "all"
@@ -114,7 +119,7 @@ const SalesForm = () => {
   };
   
   // Handle checkout
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error("Cart is empty");
       return;
@@ -134,13 +139,16 @@ const SalesForm = () => {
         notes: notes,
       };
       
-      addSale(sale);
+      await addSale(sale);
       
       toast.success("Sale completed successfully");
       
       // Reset form
       setCart([]);
       setNotes("");
+      
+      // Refresh products to get updated stock values
+      await refreshProducts();
     } catch (error) {
       toast.error("Failed to complete sale");
       console.error(error);
