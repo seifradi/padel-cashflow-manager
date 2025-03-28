@@ -21,18 +21,31 @@ const DailyBalanceContext = createContext<DailyBalanceContextType | undefined>(u
 
 export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
   const [dailyBalances, setDailyBalances] = useState<DailyBalance[]>([]);
-  const { bookings } = useBookings();
-  const { sales } = useSales();
-  const { expenses } = useExpenses();
+  const { bookings, refreshBookings } = useBookings();
+  const { sales, refreshSales } = useSales();
+  const { expenses, refreshExpenses } = useExpenses();
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
   // Fetch daily balances from Supabase when component mounts
   useEffect(() => {
     if (isAuthenticated) {
-      refreshDailyBalances();
+      refreshAllData();
     }
   }, [isAuthenticated]);
+
+  const refreshAllData = async () => {
+    try {
+      await Promise.all([
+        refreshDailyBalances(),
+        refreshSales(),
+        refreshBookings(),
+        refreshExpenses()
+      ]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    }
+  };
 
   const refreshDailyBalances = async () => {
     try {
@@ -167,6 +180,9 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
 
   const closeDay = async (cashInRegister: number, notes: string, userId: string) => {
     try {
+      // Refresh all data to make sure calculations are accurate
+      await refreshAllData();
+      
       const currentBalance = getCurrentDailyBalance();
       
       if (!currentBalance) {

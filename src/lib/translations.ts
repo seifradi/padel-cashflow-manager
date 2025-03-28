@@ -43,6 +43,27 @@ export const translations = {
     snack: "Snack",
     padelRental: "Padel Rental",
     
+    // Sales Form
+    allCategories: "All Categories",
+    stock: "Stock",
+    refresh: "Refresh",
+    noProductsAvailable: "No products available in this category",
+    shoppingCart: "Shopping Cart",
+    currentItemsInCart: "Current items in cart",
+    yourCartIsEmpty: "Your cart is empty",
+    paymentMethod: "Payment Method",
+    selectPaymentMethod: "Select payment method",
+    notes: "Notes",
+    addNotesAboutSale: "Add any notes about this sale",
+    total: "Total",
+    processing: "Processing...",
+    completeSale: "Complete Sale",
+    cartEmpty: "Cart is empty",
+    saleCompleted: "Sale completed successfully",
+    failedToCompleteSale: "Failed to complete sale",
+    productsRefreshed: "Products refreshed successfully",
+    errorRefreshingProducts: "Error refreshing products",
+    
     // Reports
     financialReports: "Financial Reports",
     trackRevenueAndSales: "Track revenue, sales and financial performance",
@@ -110,7 +131,10 @@ export const translations = {
     search: "Search",
     filter: "Filter",
     reset: "Reset",
-    apply: "Apply"
+    apply: "Apply",
+    cash: "Cash",
+    card: "Card",
+    transfer: "Transfer"
   },
   
   fr: {
@@ -154,6 +178,27 @@ export const translations = {
     energyDrink: "Boisson énergétique",
     snack: "Collation",
     padelRental: "Location de padel",
+    
+    // Sales Form
+    allCategories: "Toutes les catégories",
+    stock: "Stock",
+    refresh: "Actualiser",
+    noProductsAvailable: "Aucun produit disponible dans cette catégorie",
+    shoppingCart: "Panier d'achat",
+    currentItemsInCart: "Articles actuels dans le panier",
+    yourCartIsEmpty: "Votre panier est vide",
+    paymentMethod: "Méthode de paiement",
+    selectPaymentMethod: "Sélectionner la méthode de paiement",
+    notes: "Notes",
+    addNotesAboutSale: "Ajouter des notes sur cette vente",
+    total: "Total",
+    processing: "Traitement en cours...",
+    completeSale: "Terminer la vente",
+    cartEmpty: "Le panier est vide",
+    saleCompleted: "Vente complétée avec succès",
+    failedToCompleteSale: "Échec de la vente",
+    productsRefreshed: "Produits actualisés avec succès",
+    errorRefreshingProducts: "Erreur lors de l'actualisation des produits",
     
     // Reports
     financialReports: "Rapports financiers",
@@ -222,6 +267,9 @@ export const translations = {
     search: "Rechercher",
     filter: "Filtrer",
     reset: "Réinitialiser",
-    apply: "Appliquer"
+    apply: "Appliquer",
+    cash: "Espèces",
+    card: "Carte",
+    transfer: "Virement"
   }
 };

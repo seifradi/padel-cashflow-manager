@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -10,9 +11,10 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
 import { useData } from "@/context/DataContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { PAYMENT_METHODS, PRODUCT_CATEGORIES } from "@/lib/constants";
 import { ProductCategory } from "@/lib/types";
-import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Trash2, RefreshCw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import Card from "../common/Card";
@@ -28,11 +30,13 @@ interface CartItem {
 const SalesForm = () => {
   const { products, addSale, refreshProducts } = useData();
   const { user } = useAuth();
+  const { translations } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | "all">("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Refresh products when component mounts to ensure latest stock
   useEffect(() => {
@@ -118,10 +122,24 @@ const SalesForm = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
   
+  // Handle refresh products
+  const handleRefreshProducts = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshProducts();
+      toast.success(translations.productsRefreshed || "Products refreshed successfully");
+    } catch (error) {
+      console.error("Error refreshing products:", error);
+      toast.error(translations.errorRefreshingProducts || "Error refreshing products");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+  
   // Handle checkout
   const handleCheckout = async () => {
     if (cart.length === 0) {
-      toast.error("Cart is empty");
+      toast.error(translations.cartEmpty || "Cart is empty");
       return;
     }
     
@@ -143,7 +161,7 @@ const SalesForm = () => {
       
       await addSale(sale);
       
-      toast.success("Sale completed successfully");
+      toast.success(translations.saleCompleted || "Sale completed successfully");
       
       // Reset form
       setCart([]);
@@ -152,7 +170,7 @@ const SalesForm = () => {
       // Refresh products to get updated stock values
       await refreshProducts();
     } catch (error) {
-      toast.error("Failed to complete sale");
+      toast.error(translations.failedToCompleteSale || "Failed to complete sale");
       console.error(error);
     } finally {
       setIsProcessing(false);
@@ -162,24 +180,35 @@ const SalesForm = () => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <div className="md:col-span-2 space-y-6">
-        <Card title="Products" contentClassName="p-0" noPadding>
-          <div className="p-4 border-b">
+        <Card title={translations.products || "Products"} contentClassName="p-0" noPadding>
+          <div className="p-4 border-b flex justify-between items-center">
             <Select
               value={selectedCategory}
               onValueChange={(value) => setSelectedCategory(value as any)}
             >
               <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="All Categories" />
+                <SelectValue placeholder={translations.allCategories || "All Categories"} />
               </SelectTrigger>
               <SelectContent className="pointer-events-auto">
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">{translations.allCategories || "All Categories"}</SelectItem>
                 {PRODUCT_CATEGORIES.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
-                    {category.name}
+                    {translations[category.id as keyof typeof translations] || category.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRefreshProducts}
+              disabled={isRefreshing}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{translations.refresh || "Refresh"}</span>
+            </Button>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-4 p-4">
@@ -192,7 +221,7 @@ const SalesForm = () => {
                   <div>
                     <div className="font-medium">{product.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {product.price} TNd · Stock: {product.stock}
+                      {product.price} TNd · {translations.stock || "Stock"}: {product.stock}
                     </div>
                   </div>
                   <Button
@@ -207,7 +236,7 @@ const SalesForm = () => {
               ))
             ) : (
               <div className="col-span-full py-8 text-center text-muted-foreground">
-                No products available in this category
+                {translations.noProductsAvailable || "No products available in this category"}
               </div>
             )}
           </div>
@@ -215,12 +244,12 @@ const SalesForm = () => {
       </div>
       
       <div>
-        <Card title="Shopping Cart" subtitle="Current items in cart">
+        <Card title={translations.shoppingCart || "Shopping Cart"} subtitle={translations.currentItemsInCart || "Current items in cart"}>
           <div className="space-y-6">
             {cart.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground flex flex-col items-center">
                 <ShoppingCart className="h-12 w-12 mb-2 text-muted-foreground/50" />
-                <p>Your cart is empty</p>
+                <p>{translations.yourCartIsEmpty || "Your cart is empty"}</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -270,18 +299,18 @@ const SalesForm = () => {
             
             <div className="pt-4 border-t space-y-4">
               <div>
-                <label className="text-sm font-medium">Payment Method</label>
+                <label className="text-sm font-medium">{translations.paymentMethod || "Payment Method"}</label>
                 <Select
                   value={paymentMethod}
                   onValueChange={setPaymentMethod}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select payment method" />
+                    <SelectValue placeholder={translations.selectPaymentMethod || "Select payment method"} />
                   </SelectTrigger>
                   <SelectContent className="pointer-events-auto">
                     {PAYMENT_METHODS.map((method) => (
                       <SelectItem key={method.id} value={method.id}>
-                        {method.name}
+                        {translations[method.id as keyof typeof translations] || method.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -289,9 +318,9 @@ const SalesForm = () => {
               </div>
               
               <div>
-                <label className="text-sm font-medium">Notes</label>
+                <label className="text-sm font-medium">{translations.notes || "Notes"}</label>
                 <Textarea
-                  placeholder="Add any notes about this sale"
+                  placeholder={translations.addNotesAboutSale || "Add any notes about this sale"}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="resize-none"
@@ -300,7 +329,7 @@ const SalesForm = () => {
               
               <div className="pt-4 border-t">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="font-semibold">Total:</span>
+                  <span className="font-semibold">{translations.total || "Total"}:</span>
                   <span className="text-lg font-bold">{calculateTotal().toFixed(2)} TNd</span>
                 </div>
                 
@@ -309,7 +338,7 @@ const SalesForm = () => {
                   onClick={handleCheckout}
                   disabled={cart.length === 0 || isProcessing}
                 >
-                  {isProcessing ? "Processing..." : "Complete Sale"}
+                  {isProcessing ? (translations.processing || "Processing...") : (translations.completeSale || "Complete Sale")}
                 </Button>
               </div>
             </div>

@@ -1,7 +1,8 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatCurrency } from "@/lib/utils";
 import { useData } from "@/context/DataContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,8 @@ interface CloseRegisterDialogProps {
 
 const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
   const { user } = useAuth();
-  const { getCurrentDailyBalance, closeDay } = useData();
+  const { getCurrentDailyBalance, closeDay, refreshSales, refreshBookings, refreshExpenses } = useData();
+  const { translations, formatCurrency } = useLanguage();
   
   const [closingAmount, setClosingAmount] = useState(0);
   const [closingNotes, setClosingNotes] = useState("");
@@ -33,11 +35,24 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
   
   const currentBalance = getCurrentDailyBalance();
   
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setClosingAmount(0);
+      setClosingNotes("");
+      
+      // Refresh all data to make sure we have the latest
+      refreshSales();
+      refreshBookings();
+      refreshExpenses();
+    }
+  }, [isOpen, refreshSales, refreshBookings, refreshExpenses]);
+  
   const handleClose = async () => {
     if (!currentBalance || !user?.id) return;
     
     if (closingAmount <= 0) {
-      toast.error("Please enter the amount in register");
+      toast.error(translations.pleaseEnterAmount || "Please enter the amount in register");
       return;
     }
     
@@ -46,17 +61,19 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
       const result = await closeDay(closingAmount, closingNotes, user.id);
       
       if (Math.abs(result.difference) > 0.5) {
-        const diffType = result.difference > 0 ? "excess" : "shortage";
+        const diffType = result.difference > 0 ? 
+          (translations.excess || "excess") : 
+          (translations.shortage || "shortage");
         const diffAmount = Math.abs(result.difference);
         
         toast.warning(
-          `Register closed with ${diffType} of ${formatCurrency(diffAmount)}`, 
+          `${translations.registerClosed || "Register closed"} ${translations.with || "with"} ${diffType} ${translations.of || "of"} ${formatCurrency(diffAmount)}`, 
           {
             icon: <AlertTriangle className="h-5 w-5 text-amber-500" />
           }
         );
       } else {
-        toast.success("Register closed successfully", {
+        toast.success(translations.registerClosedSuccessfully || "Register closed successfully", {
           icon: <Check className="h-5 w-5 text-green-500" />
         });
       }
@@ -64,7 +81,7 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
       onClose();
     } catch (error: any) {
       console.error("Error closing register:", error);
-      toast.error(`Failed to close register: ${error.message}`);
+      toast.error(`${translations.failedToCloseRegister || "Failed to close register"}: ${error.message}`);
     } finally {
       setIsClosing(false);
     }
@@ -72,18 +89,16 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
   
   if (!currentBalance) return null;
   
-  const expectedAmount = currentBalance.startingAmount || 0;
-  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" />
-            Close Register
+            {translations.closeRegister || "Close Register"}
           </DialogTitle>
           <DialogDescription>
-            Verify and close today's cash register. Count the cash and enter the amount below.
+            {translations.verifyAndCloseRegister || "Verify and close today's cash register. Count the cash and enter the amount below."}
           </DialogDescription>
         </DialogHeader>
         
@@ -92,22 +107,22 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
           
           <div className="space-y-4 border-t pt-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Cash in Register</label>
+              <label className="text-sm font-medium">{translations.cashInRegister || "Cash in Register"}</label>
               <AmountInput
                 value={closingAmount}
                 onChange={setClosingAmount}
                 min={0}
-                placeholder="Enter the counted amount"
+                placeholder={translations.enterCountedAmount || "Enter the counted amount"}
               />
               <p className="text-xs text-muted-foreground">
-                Count all cash in the register and enter the total amount
+                {translations.countCashInRegister || "Count all cash in the register and enter the total amount"}
               </p>
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-medium">Notes</label>
+              <label className="text-sm font-medium">{translations.notes || "Notes"}</label>
               <Textarea
-                placeholder="Add any notes about today's balance"
+                placeholder={translations.addNotesAboutBalance || "Add any notes about today's balance"}
                 value={closingNotes}
                 onChange={(e) => setClosingNotes(e.target.value)}
                 className="min-h-[80px]"
@@ -124,7 +139,7 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
             className="gap-2"
           >
             <X className="h-4 w-4" />
-            Cancel
+            {translations.cancel || "Cancel"}
           </Button>
           <Button 
             onClick={handleClose} 
@@ -132,7 +147,9 @@ const CloseRegisterDialog = ({ isOpen, onClose }: CloseRegisterDialogProps) => {
             className="gap-2"
           >
             <Check className="h-4 w-4" />
-            {isClosing ? "Closing..." : "Close Register"}
+            {isClosing ? 
+              (translations.closing || "Closing...") : 
+              (translations.closeRegister || "Close Register")}
           </Button>
         </DialogFooter>
       </DialogContent>
