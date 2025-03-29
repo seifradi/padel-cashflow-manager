@@ -13,9 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 export const useData = () => {
   const { courts, refreshCourts } = useCourts();
   const { players, addPlayer, updatePlayer, refreshPlayers } = usePlayers();
-  const { products, updateProduct, refreshProducts } = useProducts();
+  const { products, updateProduct, refreshProducts, getProduct, addProduct, deleteProduct } = useProducts();
   const { bookings, addBooking, updateBooking, refreshBookings } = useBookings();
-  const { sales, addSale } = useSales();
+  const { sales, addSale, refreshSales } = useSales();
   const { expenses, addExpense } = useExpenses();
   const { dailyBalances, getCurrentDailyBalance, startDay, closeDay } = useDailyBalance();
 
@@ -24,7 +24,8 @@ export const useData = () => {
       refreshCourts(),
       refreshPlayers(),
       refreshProducts(),
-      refreshBookings()
+      refreshBookings(),
+      refreshSales()
     ]);
   };
 
@@ -43,6 +44,9 @@ export const useData = () => {
     products,
     updateProduct,
     refreshProducts,
+    getProduct,
+    addProduct,
+    deleteProduct,
     
     // Bookings
     bookings,
@@ -53,6 +57,7 @@ export const useData = () => {
     // Sales
     sales,
     addSale,
+    refreshSales,
     
     // Expenses
     expenses,

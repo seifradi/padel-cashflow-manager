@@ -10,6 +10,8 @@ interface ProductContextType {
   updateProduct: (product: Product) => Promise<void>;
   refreshProducts: () => Promise<void>;
   getProduct: (id: string) => Product | undefined;
+  addProduct: (product: Omit<Product, "id">) => Promise<Product>;
+  deleteProduct: (id: string) => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -47,6 +49,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       }));
       
       setProducts(typedProducts);
+      return typedProducts;
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
@@ -54,6 +57,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         description: error.message,
         variant: "destructive",
       });
+      throw error;
     }
   };
 
@@ -61,8 +65,55 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     return products.find(product => product.id === id);
   };
 
+  const addProduct = async (productData: Omit<Product, "id">): Promise<Product> => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .insert({
+          name: productData.name,
+          category: productData.category,
+          price: productData.price,
+          cost: productData.cost,
+          stock: productData.stock,
+          min_stock: productData.minStock
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      const newProduct: Product = {
+        id: data.id,
+        name: data.name,
+        category: data.category as ProductCategory,
+        price: data.price,
+        cost: data.cost,
+        stock: data.stock,
+        minStock: data.min_stock || undefined
+      };
+      
+      setProducts([...products, newProduct]);
+      
+      toast({
+        title: "Product added",
+        description: `${newProduct.name} has been added successfully`,
+      });
+      
+      return newProduct;
+    } catch (error: any) {
+      console.error('Error adding product:', error);
+      toast({
+        title: "Error adding product",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   const updateProduct = async (updatedProduct: Product) => {
     try {
+      console.log("Updating product in database:", updatedProduct);
       const { error } = await supabase
         .from('products')
         .update({
@@ -77,6 +128,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
+      // Update local state after successful database update
       setProducts(products.map(product => 
         product.id === updatedProduct.id ? updatedProduct : product
       ));
@@ -97,13 +149,43 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
   };
+  
+  const deleteProduct = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // Update local state after successful database deletion
+      setProducts(products.filter(product => product.id !== id));
+      
+      toast({
+        title: "Product deleted",
+        description: "Product has been deleted successfully",
+      });
+      
+    } catch (error: any) {
+      console.error('Error deleting product:', error);
+      toast({
+        title: "Error deleting product",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
 
   return (
     <ProductContext.Provider value={{ 
       products, 
-      updateProduct, 
+      updateProduct,
       refreshProducts,
-      getProduct 
+      getProduct,
+      addProduct,
+      deleteProduct
     }}>
       {children}
     </ProductContext.Provider>

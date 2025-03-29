@@ -1,25 +1,97 @@
 
 import { Product, Sale } from "@/lib/types";
-import { ReactNode, createContext, useContext, useState } from "react";
+import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { useProducts } from "./ProductContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
 
 interface SaleContextType {
   sales: Sale[];
   addSale: (sale: Omit<Sale, 'id'>) => Promise<Sale>;
+  refreshSales: () => Promise<void>;
 }
 
 const SaleContext = createContext<SaleContextType | undefined>(undefined);
 
 export const SaleProvider = ({ children }: { children: ReactNode }) => {
   const [sales, setSales] = useState<Sale[]>([]);
-  const { products, updateProduct } = useProducts();
+  const { products, updateProduct, refreshProducts } = useProducts();
   const { toast } = useToast();
+  const { isAuthenticated } = useAuth();
+  
+  // Fetch sales when the component mounts if user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshSales();
+    }
+  }, [isAuthenticated]);
+  
+  const refreshSales = async () => {
+    try {
+      const { data: salesData, error: salesError } = await supabase
+        .from('sales')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (salesError) throw salesError;
+      
+      const salesWithItems: Sale[] = [];
+      
+      for (const sale of salesData) {
+        // Get all items for this sale
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('sale_items')
+          .select('*')
+          .eq('sale_id', sale.id);
+        
+        if (itemsError) {
+          console.error('Error fetching sale items:', itemsError);
+          continue;
+        }
+        
+        const saleProducts = itemsData.map(item => ({
+          productId: item.product_id,
+          quantity: item.quantity,
+          price: item.price
+        }));
+        
+        salesWithItems.push({
+          id: sale.id,
+          products: saleProducts,
+          totalAmount: sale.total_amount,
+          paymentMethod: sale.payment_method as any,
+          createdBy: sale.created_by,
+          createdAt: new Date(sale.created_at),
+          notes: sale.notes
+        });
+      }
+      
+      setSales(salesWithItems);
+    } catch (error: any) {
+      console.error('Error fetching sales:', error);
+      toast({
+        title: "Error fetching sales",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const addSale = async (sale: Omit<Sale, 'id'>) => {
     try {
-      // First, create the sale in the database
+      // First, verify stock availability again before completing sale
+      for (const item of sale.products) {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) {
+          throw new Error(`Product not found: ${item.productId}`);
+        }
+        if (item.quantity > product.stock) {
+          throw new Error(`Not enough stock for product: ${product.name}`);
+        }
+      }
+      
+      // Create the sale in the database
       const { data: newSaleData, error: saleError } = await supabase
         .from('sales')
         .insert({
@@ -59,21 +131,16 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
 
         // Update product stock in the database
         const newStock = product.stock - item.quantity;
-        const { error: productError } = await supabase
-          .from('products')
-          .update({ stock: newStock })
-          .eq('id', item.productId);
-
-        if (productError) {
+        
+        try {
+          // Update the product in the database and local state
+          await updateProduct({
+            ...product,
+            stock: newStock
+          });
+        } catch (productError) {
           console.error('Error updating product stock:', productError);
-          continue;
         }
-
-        // Update product in local state
-        updateProduct({
-          ...product,
-          stock: newStock
-        });
       }
 
       // Create the complete sale object for our state
@@ -87,7 +154,10 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         notes: sale.notes,
       };
 
-      setSales([...sales, newSale]);
+      setSales([newSale, ...sales]);
+      
+      // Refresh products to ensure stock levels are up to date
+      await refreshProducts();
       
       toast({
         title: "Sale completed",
@@ -107,7 +177,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <SaleContext.Provider value={{ sales, addSale }}>
+    <SaleContext.Provider value={{ sales, addSale, refreshSales }}>
       {children}
     </SaleContext.Provider>
   );

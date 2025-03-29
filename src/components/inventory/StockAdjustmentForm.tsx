@@ -22,7 +22,6 @@ import { useData } from "@/context/DataContext";
 import { Product } from "@/lib/types";
 import AmountInput from "../common/AmountInput";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
 
 interface StockAdjustmentFormProps {
   isOpen: boolean;
@@ -31,7 +30,7 @@ interface StockAdjustmentFormProps {
 }
 
 const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentFormProps) => {
-  const { products, updateProduct } = useData();
+  const { products, updateProduct, refreshProducts } = useData();
   
   const [adjustmentType, setAdjustmentType] = useState<'add' | 'subtract' | 'set'>('add');
   const [quantity, setQuantity] = useState(0);
@@ -68,28 +67,28 @@ const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentForm
           break;
       }
       
-      // Update stock in the database first
-      const { error } = await supabase
-        .from('products')
-        .update({ stock: newStock })
-        .eq('id', productId);
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Then update the local state
-      await updateProduct({
+      // Update the product with new stock level
+      const updatedProduct = {
         ...product,
         stock: newStock
-      });
+      };
+      
+      // Update in database and local state
+      await updateProduct(updatedProduct);
+      
+      // Refresh products to ensure data consistency
+      await refreshProducts();
       
       // Record the adjustment in the console for now
-      // In a real application, you might want to store this in a stock_adjustments table
       console.log(`Stock adjustment: ${adjustmentType} ${quantity} units to product ${productId}. Reason: ${reason}`);
       
       toast.success(`Stock ${adjustmentType === 'add' ? 'added' : adjustmentType === 'subtract' ? 'removed' : 'updated'} successfully`);
+      
+      // Reset form and close dialog
+      setQuantity(0);
+      setReason("");
       onClose();
+      
     } catch (error: any) {
       console.error('Error adjusting stock:', error);
       toast.error(`Error adjusting stock: ${error.message}`);
