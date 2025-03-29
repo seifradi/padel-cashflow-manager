@@ -124,9 +124,18 @@ const CashRegisterPage = () => {
       <div className="space-y-6">
         <PageTitle 
           title="Cash Register" 
-          subtitle="View closed register details and summary" 
+          subtitle="The register is currently closed. No operations can be performed." 
         />
         <ClosedRegisterView balance={currentBalance} />
+        
+        <div className="flex justify-center mt-8">
+          <Button 
+            onClick={() => handleStartDay()}
+            className="animate-pulse"
+          >
+            Open New Register
+          </Button>
+        </div>
       </div>
     );
   }

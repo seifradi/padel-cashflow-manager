@@ -2,18 +2,65 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 import { useData } from "@/context/DataContext";
 import PageTitle from "../common/PageTitle";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  PieChart, 
+  Pie, 
+  Cell 
+} from "recharts";
+import { 
+  Table, 
+  TableBody, 
+  TableCaption, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  format, 
+  subDays, 
+  startOfMonth, 
+  endOfMonth, 
+  eachDayOfInterval, 
+  isSameDay,
+  isThisWeek,
+  isThisMonth,
+  startOfWeek,
+  endOfWeek,
+  startOfDay,
+  endOfDay
+} from "date-fns";
+import { Button } from "../ui/button";
+import { DailyBalance } from "@/lib/types";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088fe"];
 
 const ReportsPage = () => {
-  const { bookings, sales, expenses } = useData();
+  const { bookings, sales, expenses, dailyBalances } = useData();
   const [dailyData, setDailyData] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [productData, setProductData] = useState<any[]>([]);
+  const [registersTimeframe, setRegistersTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [filteredBalances, setFilteredBalances] = useState<DailyBalance[]>([]);
 
   // Helper to format money
   const formatMoney = (amount: number) => {
@@ -32,6 +79,35 @@ const ReportsPage = () => {
 
   // Calculate total bookings
   const totalBookingsCount = bookings.length;
+
+  // Filter registers based on timeframe
+  useEffect(() => {
+    const today = new Date();
+    let filtered: DailyBalance[] = [];
+
+    switch (registersTimeframe) {
+      case 'daily':
+        filtered = dailyBalances.filter(balance => {
+          const balanceDate = new Date(balance.date);
+          return isSameDay(balanceDate, today);
+        });
+        break;
+      case 'weekly':
+        filtered = dailyBalances.filter(balance => {
+          const balanceDate = new Date(balance.date);
+          return isThisWeek(balanceDate, { weekStartsOn: 1 });
+        }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        break;
+      case 'monthly':
+        filtered = dailyBalances.filter(balance => {
+          const balanceDate = new Date(balance.date);
+          return isThisMonth(balanceDate);
+        }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        break;
+    }
+
+    setFilteredBalances(filtered);
+  }, [registersTimeframe, dailyBalances]);
 
   // Generate daily revenue data for the past 30 days
   useEffect(() => {
@@ -94,6 +170,11 @@ const ReportsPage = () => {
     
     setProductData(sampleProducts);
   }, [bookings]);
+
+  // Calculate total discrepancy for filtered balances
+  const totalDiscrepancy = filteredBalances.reduce((total, balance) => {
+    return total + balance.difference;
+  }, 0);
 
   return (
     <div className="space-y-6">
@@ -162,11 +243,12 @@ const ReportsPage = () => {
         </Card>
       </div>
       
-      <Tabs defaultValue="revenue">
+      <Tabs defaultValue="revenue" className="space-y-4">
         <TabsList>
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
+          <TabsTrigger value="registers">Registers</TabsTrigger>
         </TabsList>
         
         <TabsContent value="revenue" className="space-y-6">
@@ -295,6 +377,118 @@ const ReportsPage = () => {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="registers" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Cashier Register Reports</CardTitle>
+                <Select
+                  value={registersTimeframe}
+                  onValueChange={(value) => setRegistersTimeframe(value as 'daily' | 'weekly' | 'monthly')}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Select timeframe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {filteredBalances.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <Card className="bg-slate-50">
+                      <CardHeader className="py-3">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          Total Registers
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-2">
+                        <div className="text-2xl font-bold">{filteredBalances.length}</div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-slate-50">
+                      <CardHeader className="py-3">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          Total Cash Handled
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-2">
+                        <div className="text-2xl font-bold">
+                          {formatMoney(filteredBalances.reduce((sum, balance) => sum + balance.cashInRegister, 0))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-slate-50">
+                      <CardHeader className="py-3">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          Total Discrepancy
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-2">
+                        <div className={`text-2xl font-bold ${totalDiscrepancy >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {totalDiscrepancy >= 0 ? '+' : ''}{formatMoney(totalDiscrepancy)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <Table>
+                    <TableCaption>
+                      Cash register reports for {registersTimeframe} period
+                    </TableCaption>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Cashier</TableHead>
+                        <TableHead>Starting</TableHead>
+                        <TableHead>Calculated</TableHead>
+                        <TableHead>Actual</TableHead>
+                        <TableHead className="text-right">Difference</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredBalances.map((balance) => (
+                        <TableRow key={balance.id}>
+                          <TableCell>
+                            {format(new Date(balance.date), "MMM dd, yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            {balance.closedBy.substring(0, 8)}...
+                          </TableCell>
+                          <TableCell>
+                            {formatMoney(balance.startingAmount)}
+                          </TableCell>
+                          <TableCell>
+                            {formatMoney(balance.calculatedAmount)}
+                          </TableCell>
+                          <TableCell>
+                            {formatMoney(balance.cashInRegister)}
+                          </TableCell>
+                          <TableCell className={`text-right ${balance.difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {balance.difference >= 0 ? '+' : ''}{formatMoney(balance.difference)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </>
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-muted-foreground mb-4">No register data found for the selected timeframe</p>
+                  <Button variant="outline">Export Report</Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
