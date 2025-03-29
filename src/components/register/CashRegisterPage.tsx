@@ -18,7 +18,6 @@ import SalesForm from "../sales/SalesForm";
 import AmountInput from "../common/AmountInput";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
-import ClosedRegisterView from "./ClosedRegisterView";
 
 const CashRegisterPage = () => {
   const { user } = useAuth();
@@ -31,7 +30,6 @@ const CashRegisterPage = () => {
   
   const currentBalance = getCurrentDailyBalance();
   const today = new Date();
-  const isRegisterOpen = currentBalance && !currentBalance.verifiedAt;
   
   const handleStartDay = () => {
     if (startingAmount <= 0) {
@@ -83,24 +81,11 @@ const CashRegisterPage = () => {
     }
   };
   
-  // If there's a balance but it's closed (verified), show the closed register view
-  if (currentBalance && currentBalance.verifiedAt) {
-    return (
-      <div className="space-y-6">
-        <PageTitle 
-          title="Cash Register" 
-          subtitle="Register is closed for today. Here's the summary."
-        />
-        <ClosedRegisterView balance={currentBalance} />
-      </div>
-    );
-  }
-  
   return (
     <div className="space-y-6">
       <PageTitle title="Cash Register" subtitle="Manage court bookings, products sales, and daily balance" />
       
-      {!isRegisterOpen ? (
+      {!currentBalance ? (
         <Card
           title="Initialize Cash Register"
           subtitle={`Start a new day (${format(today, "EEEE, MMMM d, yyyy")})`}
