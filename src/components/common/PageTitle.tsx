@@ -1,20 +1,19 @@
 
-import { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
-export interface PageTitleProps {
+interface PageTitleProps {
   title: string;
   subtitle?: string;
-  icon?: ReactNode;
+  className?: string;
 }
 
-const PageTitle = ({ title, subtitle, icon }: PageTitleProps) => {
+const PageTitle = ({ title, subtitle, className }: PageTitleProps) => {
   return (
-    <div className="mb-6">
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        {icon && <span>{icon}</span>}
-        {title}
-      </h1>
-      {subtitle && <p className="text-muted-foreground">{subtitle}</p>}
+    <div className={cn("mb-6 animate-fade-in", className)}>
+      <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+      {subtitle && (
+        <p className="text-muted-foreground mt-1">{subtitle}</p>
+      )}
     </div>
   );
 };

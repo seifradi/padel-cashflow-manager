@@ -7,7 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 
 interface ProductContextType {
   products: Product[];
-  updateProduct: (product: Product) => Promise<void>;
+  updateProduct: (product: Product) => void;
   refreshProducts: () => Promise<void>;
 }
 
@@ -72,27 +72,9 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      // Update local state to reflect changes immediately
-      setProducts(prevProducts => 
-        prevProducts.map(product => 
-          product.id === updatedProduct.id ? updatedProduct : product
-        )
-      );
-
-      // Notify about stock update
-      if (updatedProduct.stock <= (updatedProduct.minStock || 0) && updatedProduct.stock > 0) {
-        toast({
-          title: "Low Stock Warning",
-          description: `${updatedProduct.name} is running low on stock (${updatedProduct.stock} left)`,
-          variant: "default",
-        });
-      } else if (updatedProduct.stock === 0) {
-        toast({
-          title: "Out of Stock",
-          description: `${updatedProduct.name} is now out of stock`,
-          variant: "destructive",
-        });
-      }
+      setProducts(products.map(product => 
+        product.id === updatedProduct.id ? updatedProduct : product
+      ));
     } catch (error: any) {
       console.error('Error updating product:', error);
       toast({

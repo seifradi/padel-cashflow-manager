@@ -1,53 +1,83 @@
 
-import { Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { Toaster } from "sonner";
-import { ThemeProvider } from "@/components/ui/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
+import Dashboard from "./pages/Dashboard";
+import CashRegister from "./pages/CashRegister";
+import Bookings from "./pages/Bookings";
+import Inventory from "./pages/Inventory";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import { AuthProvider } from "./context/AuthContext";
-import { LanguageProvider } from "./context/LanguageContext";
-import { DataProvider } from "./context/DataContext";
+import { DataProvider } from "./context/data";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { RoleAuth } from "./components/auth/RoleAuth";
 
-// Pages
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Bookings from "./pages/Bookings";
-import CashRegister from "./pages/CashRegister";
-import Reports from "./pages/Reports";
-import Settings from "./pages/Settings";
-import NotFound from "./pages/NotFound";
-import Inventory from "./pages/Inventory";
+const queryClient = new QueryClient();
 
-function App() {
-  return (
-    <ThemeProvider defaultTheme="light" storageKey="padel-plus-theme">
-      <LanguageProvider>
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <BrowserRouter>
         <AuthProvider>
           <DataProvider>
+            <Toaster />
+            <Sonner />
             <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               
-              <Route element={<RequireAuth><Outlet /></RequireAuth>}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/bookings" element={<Bookings />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/cash-register" element={<CashRegister />} />
-                <Route path="/reports" element={<Reports />} />
-                
-                <Route element={<RoleAuth allowedRoles={['admin', 'manager']}><Outlet /></RoleAuth>}>
-                  <Route path="/settings" element={<Settings />} />
-                </Route>
-              </Route>
+              {/* Protected routes with role-based access */}
+              <Route path="/dashboard" element={
+                <RequireAuth>
+                  <RoleAuth allowedRoles={["admin", "manager"]}>
+                    <Dashboard />
+                  </RoleAuth>
+                </RequireAuth>
+              } />
+              <Route path="/cash-register" element={
+                <RequireAuth>
+                  <CashRegister />
+                </RequireAuth>
+              } />
+              <Route path="/bookings" element={
+                <RequireAuth>
+                  <Bookings />
+                </RequireAuth>
+              } />
+              <Route path="/inventory" element={
+                <RequireAuth>
+                  <Inventory />
+                </RequireAuth>
+              } />
+              <Route path="/reports" element={
+                <RequireAuth>
+                  <RoleAuth allowedRoles={["admin", "manager"]}>
+                    <Reports />
+                  </RoleAuth>
+                </RequireAuth>
+              } />
+              <Route path="/settings" element={
+                <RequireAuth>
+                  <RoleAuth allowedRoles={["admin", "manager"]}>
+                    <Settings />
+                  </RoleAuth>
+                </RequireAuth>
+              } />
               
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-            <Toaster position="top-right" />
           </DataProvider>
         </AuthProvider>
-      </LanguageProvider>
-    </ThemeProvider>
-  );
-}
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

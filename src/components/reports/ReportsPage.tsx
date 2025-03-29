@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -5,9 +6,6 @@ import { useData } from "@/context/DataContext";
 import PageTitle from "../common/PageTitle";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay } from "date-fns";
-import CashRegisterReports from "./CashRegisterReports";
-import { useLanguage } from "@/context/LanguageContext";
-import { BarChart3, DollarSign, ShoppingCart } from "lucide-react";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088fe"];
 
@@ -16,17 +14,26 @@ const ReportsPage = () => {
   const [dailyData, setDailyData] = useState<any[]>([]);
   const [salesData, setSalesData] = useState<any[]>([]);
   const [productData, setProductData] = useState<any[]>([]);
-  const { formatCurrency, translations } = useLanguage();
 
+  // Helper to format money
+  const formatMoney = (amount: number) => {
+    return amount.toFixed(2) + " TNd";
+  };
+
+  // Calculate total revenue
   const totalRevenue = sales.reduce((sum, sale) => sum + sale.totalAmount, 0) +
     bookings.reduce((sum, booking) => sum + booking.totalAmount, 0);
 
+  // Calculate total expenses
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
+  // Calculate total profit
   const totalProfit = totalRevenue - totalExpenses;
 
+  // Calculate total bookings
   const totalBookingsCount = bookings.length;
 
+  // Generate daily revenue data for the past 30 days
   useEffect(() => {
     const today = new Date();
     const thirtyDaysAgo = subDays(today, 30);
@@ -59,48 +66,53 @@ const ReportsPage = () => {
     setDailyData(data);
   }, [bookings, sales]);
 
+  // Generate sales by product category data
   useEffect(() => {
+    // This would need to be enhanced with real sale item data
+    // For now, just create sample data based on sales count
     const sampleCategories = [
-      { name: translations.drinks, value: sales.length * 0.4 },
-      { name: translations.food, value: sales.length * 0.3 },
-      { name: translations.equipment, value: sales.length * 0.2 },
-      { name: translations.other, value: sales.length * 0.1 }
+      { name: 'Drinks', value: sales.length * 0.4 },
+      { name: 'Food', value: sales.length * 0.3 },
+      { name: 'Equipment', value: sales.length * 0.2 },
+      { name: 'Other', value: sales.length * 0.1 }
     ];
     
     setSalesData(sampleCategories);
-  }, [sales, translations]);
+  }, [sales]);
 
+  // Generate most popular products data
   useEffect(() => {
+    // This would need to be enhanced with real sale item data
+    // For now, just create sample data
     const sampleProducts = [
-      { name: translations.water, sales: bookings.length * 2 },
-      { name: translations.soda, sales: bookings.length * 1.5 },
-      { name: translations.energyDrink, sales: bookings.length * 1.2 },
-      { name: translations.snack, sales: bookings.length * 0.8 },
-      { name: translations.padelRental, sales: bookings.length * 0.6 }
+      { name: 'Water', sales: bookings.length * 2 },
+      { name: 'Soda', sales: bookings.length * 1.5 },
+      { name: 'Energy Drink', sales: bookings.length * 1.2 },
+      { name: 'Snack', sales: bookings.length * 0.8 },
+      { name: 'Padel Rental', sales: bookings.length * 0.6 }
     ];
     
     setProductData(sampleProducts);
-  }, [bookings, translations]);
+  }, [bookings]);
 
   return (
     <div className="space-y-6">
       <PageTitle 
-        title={translations.financialReports}
-        subtitle={translations.trackRevenueAndSales}
-        icon={<BarChart3 className="h-5 w-5" />}
+        title="Financial Reports" 
+        subtitle="Track revenue, sales and financial performance"
       />
       
       <div className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {translations.totalRevenue}
+              Total Revenue
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
+            <div className="text-2xl font-bold">{formatMoney(totalRevenue)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {translations.fromBookingsAndSales}
+              From bookings and sales
             </p>
           </CardContent>
         </Card>
@@ -108,13 +120,13 @@ const ReportsPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {translations.totalExpenses}
+              Total Expenses
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
+            <div className="text-2xl font-bold">{formatMoney(totalExpenses)}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {translations.allRecordedExpenses}
+              All recorded expenses
             </p>
           </CardContent>
         </Card>
@@ -122,15 +134,15 @@ const ReportsPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {translations.netProfit}
+              Net Profit
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(totalProfit)}
+              {formatMoney(totalProfit)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {translations.revenueMinusExpenses}
+              Revenue minus expenses
             </p>
           </CardContent>
         </Card>
@@ -138,13 +150,13 @@ const ReportsPage = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              {translations.totalBookings}
+              Total Bookings
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalBookingsCount}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              {translations.allCourtReservations}
+              All court reservations
             </p>
           </CardContent>
         </Card>
@@ -152,24 +164,15 @@ const ReportsPage = () => {
       
       <Tabs defaultValue="revenue">
         <TabsList>
-          <TabsTrigger value="revenue" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            {translations.revenue}
-          </TabsTrigger>
-          <TabsTrigger value="products" className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" />
-            {translations.products}
-          </TabsTrigger>
-          <TabsTrigger value="cashRegister" className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4" />
-            {translations.cashRegister}
-          </TabsTrigger>
+          <TabsTrigger value="revenue">Revenue</TabsTrigger>
+          <TabsTrigger value="products">Products</TabsTrigger>
+          <TabsTrigger value="bookings">Bookings</TabsTrigger>
         </TabsList>
         
         <TabsContent value="revenue" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{translations.dailyRevenue}</CardTitle>
+              <CardTitle>Daily Revenue (Last 30 Days)</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[400px] w-full">
@@ -181,10 +184,10 @@ const ReportsPage = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [formatCurrency(value as number), undefined]} />
+                    <Tooltip formatter={(value) => [`${value} TNd`, undefined]} />
                     <Legend />
-                    <Bar dataKey="bookings" name={translations.courtBookings} fill="#8884d8" />
-                    <Bar dataKey="sales" name={translations.productSales} fill="#82ca9d" />
+                    <Bar dataKey="bookings" name="Court Bookings" fill="#8884d8" />
+                    <Bar dataKey="sales" name="Product Sales" fill="#82ca9d" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -194,7 +197,7 @@ const ReportsPage = () => {
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>{translations.salesByCategory}</CardTitle>
+                <CardTitle>Sales by Category</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
@@ -223,7 +226,7 @@ const ReportsPage = () => {
             
             <Card>
               <CardHeader>
-                <CardTitle>{translations.mostPopularProducts}</CardTitle>
+                <CardTitle>Most Popular Products</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
@@ -249,21 +252,21 @@ const ReportsPage = () => {
         <TabsContent value="products" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>{translations.productSalesTrends}</CardTitle>
+              <CardTitle>Product Sales Trends</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart
-                    data={dailyData.slice(-14)}
+                    data={dailyData.slice(-14)} // Last 14 days
                     margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" />
                     <YAxis />
-                    <Tooltip formatter={(value) => [formatCurrency(value as number), undefined]} />
+                    <Tooltip formatter={(value) => [`${value} TNd`, undefined]} />
                     <Legend />
-                    <Line type="monotone" dataKey="sales" name={translations.productSales} stroke="#82ca9d" />
+                    <Line type="monotone" dataKey="sales" name="Product Sales" stroke="#82ca9d" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -271,8 +274,29 @@ const ReportsPage = () => {
           </Card>
         </TabsContent>
         
-        <TabsContent value="cashRegister" className="space-y-6">
-          <CashRegisterReports />
+        <TabsContent value="bookings" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Booking Revenue Trends</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={dailyData.slice(-14)} // Last 14 days
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => [`${value} TNd`, undefined]} />
+                    <Legend />
+                    <Line type="monotone" dataKey="bookings" name="Court Bookings" stroke="#8884d8" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

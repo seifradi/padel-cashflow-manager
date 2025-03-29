@@ -1,46 +1,16 @@
 
 import { Expense } from "@/lib/types";
 import { ReactNode, createContext, useContext, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 interface ExpenseContextType {
   expenses: Expense[];
   addExpense: (expense: Omit<Expense, 'id'>) => Expense;
-  refreshExpenses: () => Promise<void>;
 }
 
 const ExpenseContext = createContext<ExpenseContextType | undefined>(undefined);
 
 export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
-
-  const refreshExpenses = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
-      // Convert Supabase data to our app's Expense type
-      const typedExpenses: Expense[] = data.map(expense => ({
-        id: expense.id,
-        description: expense.description,
-        amount: expense.amount,
-        category: expense.category,
-        createdBy: expense.created_by,
-        createdAt: new Date(expense.created_at),
-        receipt: expense.receipt || undefined
-      }));
-      
-      setExpenses(typedExpenses);
-    } catch (error: any) {
-      console.error('Error fetching expenses:', error);
-      toast.error(`Error fetching expenses: ${error.message}`);
-    }
-  };
 
   const addExpense = (expense: Omit<Expense, 'id'>) => {
     const newExpense = {
@@ -52,7 +22,7 @@ export const ExpenseProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ExpenseContext.Provider value={{ expenses, addExpense, refreshExpenses }}>
+    <ExpenseContext.Provider value={{ expenses, addExpense }}>
       {children}
     </ExpenseContext.Provider>
   );

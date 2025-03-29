@@ -4,10 +4,11 @@ import { useData } from "@/context/DataContext";
 import { PRODUCT_CATEGORIES } from "@/lib/constants";
 import { 
   Package, 
+  Plus, 
   AlertCircle,
   ShoppingCart,
   ArrowUpDown,
-  RefreshCw
+  Download
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -46,53 +47,13 @@ const InventoryPage = () => {
   const [selectedProductForDetails, setSelectedProductForDetails] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
+  // Refresh products when component mounts
   useEffect(() => {
-    const initialLoad = async () => {
-      setIsRefreshing(true);
-      try {
-        await refreshProducts();
-        setInitialLoadComplete(true);
-      } catch (error) {
-        console.error("Error loading inventory data:", error);
-      } finally {
-        setIsRefreshing(false);
-      }
-    };
-    
-    initialLoad();
-    
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && initialLoadComplete) {
-        refreshProductsData(false); // Silent refresh when returning to tab
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    refreshProducts();
   }, [refreshProducts]);
   
-  const refreshProductsData = async (showToast = true) => {
-    if (isRefreshing) return;
-    
-    setIsRefreshing(true);
-    try {
-      await refreshProducts();
-      if (showToast) {
-        toast.success("Inventory data refreshed");
-      }
-    } catch (error) {
-      console.error("Error refreshing inventory data:", error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-  
+  // Filter products by search term, category, and stock status
   const filteredProducts = products
     .filter((product) => {
       const matchesSearch = product.name
@@ -121,6 +82,7 @@ const InventoryPage = () => {
       }
     });
   
+  // Group products by category for the tabular view
   const productsByCategory = PRODUCT_CATEGORIES.reduce((acc, category) => {
     acc[category.id] = filteredProducts.filter(
       (product) => product.category === category.id
@@ -128,25 +90,30 @@ const InventoryPage = () => {
     return acc;
   }, {} as Record<string, typeof products>);
   
+  // Open product details
   const openProductDetails = (productId: string) => {
     setSelectedProductForDetails(productId);
   };
   
+  // Handle edit product
   const handleEditProduct = (productId: string) => {
     setSelectedProduct(productId);
     setIsEditProductDialogOpen(true);
   };
   
+  // Handle stock adjustment
   const handleStockAdjust = (productId: string) => {
     setSelectedProduct(productId);
     setIsStockAdjustDialogOpen(true);
   };
   
+  // Handle delete product
   const handleDeleteProduct = (productId: string) => {
     setSelectedProduct(productId);
     setIsDeleteDialogOpen(true);
   };
 
+  // Toggle sort direction
   const toggleSort = (field: 'name' | 'category' | 'stock' | 'price') => {
     if (sortBy === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -156,23 +123,29 @@ const InventoryPage = () => {
     }
   };
   
+  // Calculate total inventory value
   const calculateTotalValue = () => {
     return products.reduce((total, product) => {
       return total + product.price * product.stock;
     }, 0);
   };
   
+  // Count low stock items
   const lowStockCount = products.filter(
     (product) => product.minStock && product.stock <= product.minStock && product.stock > 0
   ).length;
   
+  // Count out of stock items
   const outOfStockCount = products.filter(
     (product) => product.stock === 0
   ).length;
 
+  // Export to CSV
   const handleExportCSV = () => {
+    // Headers
     const headers = ['name', 'category', 'price', 'cost', 'stock', 'min_stock'];
     
+    // Data rows
     const rows = products.map(product => [
       product.name,
       product.category,
@@ -182,11 +155,13 @@ const InventoryPage = () => {
       (product.minStock || '').toString()
     ]);
     
+    // Combine and create CSV content
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
     
+    // Create blob and download
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -202,22 +177,10 @@ const InventoryPage = () => {
   
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <PageTitle 
-          title="Inventory Management" 
-          subtitle="Track and manage products and supplies"
-        />
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => refreshProductsData(true)}
-          disabled={isRefreshing}
-          className="flex items-center gap-1"
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
+      <PageTitle 
+        title="Inventory Management" 
+        subtitle="Track and manage products and supplies"
+      />
       
       <div className="grid gap-6 md:grid-cols-3">
         <div className="bg-card rounded-lg border shadow-sm flex items-center p-4 animate-slide-in [animation-delay:0ms]">
