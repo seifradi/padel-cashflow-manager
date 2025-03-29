@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useData } from "@/context/DataContext";
 import { PRODUCT_CATEGORIES } from "@/lib/constants";
@@ -8,7 +7,8 @@ import {
   AlertCircle,
   ShoppingCart,
   ArrowUpDown,
-  Download
+  Download,
+  RefreshCw
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -47,13 +47,25 @@ const InventoryPage = () => {
   const [selectedProductForDetails, setSelectedProductForDetails] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Refresh products when component mounts
   useEffect(() => {
     refreshProducts();
+    
+    const intervalId = setInterval(() => {
+      refreshProducts();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(intervalId);
   }, [refreshProducts]);
   
-  // Filter products by search term, category, and stock status
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshProducts();
+    setIsRefreshing(false);
+    toast.success("Inventory data refreshed");
+  };
+
   const filteredProducts = products
     .filter((product) => {
       const matchesSearch = product.name
@@ -82,7 +94,6 @@ const InventoryPage = () => {
       }
     });
   
-  // Group products by category for the tabular view
   const productsByCategory = PRODUCT_CATEGORIES.reduce((acc, category) => {
     acc[category.id] = filteredProducts.filter(
       (product) => product.category === category.id
@@ -90,30 +101,25 @@ const InventoryPage = () => {
     return acc;
   }, {} as Record<string, typeof products>);
   
-  // Open product details
   const openProductDetails = (productId: string) => {
     setSelectedProductForDetails(productId);
   };
   
-  // Handle edit product
   const handleEditProduct = (productId: string) => {
     setSelectedProduct(productId);
     setIsEditProductDialogOpen(true);
   };
   
-  // Handle stock adjustment
   const handleStockAdjust = (productId: string) => {
     setSelectedProduct(productId);
     setIsStockAdjustDialogOpen(true);
   };
   
-  // Handle delete product
   const handleDeleteProduct = (productId: string) => {
     setSelectedProduct(productId);
     setIsDeleteDialogOpen(true);
   };
 
-  // Toggle sort direction
   const toggleSort = (field: 'name' | 'category' | 'stock' | 'price') => {
     if (sortBy === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -123,29 +129,22 @@ const InventoryPage = () => {
     }
   };
   
-  // Calculate total inventory value
   const calculateTotalValue = () => {
     return products.reduce((total, product) => {
       return total + product.price * product.stock;
     }, 0);
   };
   
-  // Count low stock items
   const lowStockCount = products.filter(
     (product) => product.minStock && product.stock <= product.minStock && product.stock > 0
   ).length;
   
-  // Count out of stock items
   const outOfStockCount = products.filter(
     (product) => product.stock === 0
   ).length;
 
-  // Export to CSV
   const handleExportCSV = () => {
-    // Headers
     const headers = ['name', 'category', 'price', 'cost', 'stock', 'min_stock'];
-    
-    // Data rows
     const rows = products.map(product => [
       product.name,
       product.category,
@@ -154,14 +153,10 @@ const InventoryPage = () => {
       product.stock.toString(),
       (product.minStock || '').toString()
     ]);
-    
-    // Combine and create CSV content
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
-    
-    // Create blob and download
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -171,16 +166,26 @@ const InventoryPage = () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    
     toast.success('Inventory exported to CSV');
   };
   
   return (
     <div className="space-y-6">
-      <PageTitle 
-        title="Inventory Management" 
-        subtitle="Track and manage products and supplies"
-      />
+      <div className="flex justify-between items-center">
+        <PageTitle 
+          title="Inventory Management" 
+          subtitle="Track and manage products and supplies"
+        />
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh} 
+          disabled={isRefreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </div>
       
       <div className="grid gap-6 md:grid-cols-3">
         <div className="bg-card rounded-lg border shadow-sm flex items-center p-4 animate-slide-in [animation-delay:0ms]">

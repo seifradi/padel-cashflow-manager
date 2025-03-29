@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -23,6 +22,7 @@ import { useData } from "@/context/DataContext";
 import { Product } from "@/lib/types";
 import AmountInput from "../common/AmountInput";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StockAdjustmentFormProps {
   isOpen: boolean;
@@ -68,10 +68,25 @@ const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentForm
           break;
       }
       
+      // Update stock in the database first
+      const { error } = await supabase
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', productId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Then update the local state
       await updateProduct({
         ...product,
         stock: newStock
       });
+      
+      // Record the adjustment in the console for now
+      // In a real application, you might want to store this in a stock_adjustments table
+      console.log(`Stock adjustment: ${adjustmentType} ${quantity} units to product ${productId}. Reason: ${reason}`);
       
       toast.success(`Stock ${adjustmentType === 'add' ? 'added' : adjustmentType === 'subtract' ? 'removed' : 'updated'} successfully`);
       onClose();

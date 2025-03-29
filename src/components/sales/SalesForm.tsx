@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,6 +32,7 @@ const SalesForm = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Filter products by category
   const filteredProducts = selectedCategory === "all"
@@ -114,13 +114,29 @@ const SalesForm = () => {
   };
   
   // Handle checkout
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error("Cart is empty");
       return;
     }
     
+    // Verify stock availability again before completing sale
+    const stockIssues = [];
+    for (const item of cart) {
+      const product = products.find(p => p.id === item.productId);
+      if (product && item.quantity > product.stock) {
+        stockIssues.push(`Not enough stock for ${item.name}: ${product.stock} available`);
+      }
+    }
+    
+    if (stockIssues.length > 0) {
+      stockIssues.forEach(issue => toast.error(issue));
+      return;
+    }
+    
     try {
+      setIsSubmitting(true);
+      
       const sale = {
         products: cart.map(item => ({
           productId: item.productId,
@@ -134,16 +150,15 @@ const SalesForm = () => {
         notes: notes,
       };
       
-      addSale(sale);
-      
-      toast.success("Sale completed successfully");
+      await addSale(sale);
       
       // Reset form
       setCart([]);
       setNotes("");
     } catch (error) {
-      toast.error("Failed to complete sale");
-      console.error(error);
+      console.error("Failed to complete sale:", error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -295,9 +310,9 @@ const SalesForm = () => {
                 <Button
                   className="w-full"
                   onClick={handleCheckout}
-                  disabled={cart.length === 0}
+                  disabled={cart.length === 0 || isSubmitting}
                 >
-                  Complete Sale
+                  {isSubmitting ? "Processing..." : "Complete Sale"}
                 </Button>
               </div>
             </div>

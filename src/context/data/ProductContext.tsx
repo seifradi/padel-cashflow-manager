@@ -7,8 +7,9 @@ import { useAuth } from "@/context/AuthContext";
 
 interface ProductContextType {
   products: Product[];
-  updateProduct: (product: Product) => void;
+  updateProduct: (product: Product) => Promise<void>;
   refreshProducts: () => Promise<void>;
+  getProduct: (id: string) => Product | undefined;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -56,6 +57,10 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const getProduct = (id: string) => {
+    return products.find(product => product.id === id);
+  };
+
   const updateProduct = async (updatedProduct: Product) => {
     try {
       const { error } = await supabase
@@ -75,6 +80,13 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       setProducts(products.map(product => 
         product.id === updatedProduct.id ? updatedProduct : product
       ));
+      
+      // Notify success
+      toast({
+        title: "Product updated",
+        description: `${updatedProduct.name} has been updated successfully`,
+      });
+      
     } catch (error: any) {
       console.error('Error updating product:', error);
       toast({
@@ -82,11 +94,17 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         description: error.message,
         variant: "destructive",
       });
+      throw error;
     }
   };
 
   return (
-    <ProductContext.Provider value={{ products, updateProduct, refreshProducts }}>
+    <ProductContext.Provider value={{ 
+      products, 
+      updateProduct, 
+      refreshProducts,
+      getProduct 
+    }}>
       {children}
     </ProductContext.Provider>
   );
