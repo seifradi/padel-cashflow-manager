@@ -2,7 +2,7 @@
 import { DailyBalance } from "@/lib/types";
 import { ReactNode, createContext, useContext, useState } from "react";
 import { useBookings } from "./BookingContext";
-import { useSales } from "./SaleContext";
+import { useSales } from "./sale/useSaleContext";
 import { useExpenses } from "./ExpenseContext";
 
 interface DailyBalanceContextType {
