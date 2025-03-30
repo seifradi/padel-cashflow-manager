@@ -7,17 +7,20 @@ import { useAuth } from "@/context/AuthContext";
 
 interface ProductContextType {
   products: Product[];
+  isLoading: boolean;
   updateProduct: (product: Product) => Promise<void>;
   refreshProducts: () => Promise<void>;
   getProduct: (id: string) => Product | undefined;
   addProduct: (product: Omit<Product, "id">) => Promise<Product>;
   deleteProduct: (id: string) => Promise<void>;
+  adjustStock: (productId: string, quantity: number, isAddition: boolean) => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
 
@@ -30,7 +33,8 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshProducts = async () => {
     try {
-      console.log("Refreshing products from database");
+      setIsLoading(true);
+      
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -49,8 +53,10 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         minStock: product.min_stock || undefined
       }));
       
-      console.log(`Refreshed ${typedProducts.length} products from database`);
+      console.log(`Loaded ${typedProducts.length} products from database`);
       setProducts(typedProducts);
+      
+      return typedProducts;
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
@@ -59,6 +65,8 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -114,7 +122,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
 
   const updateProduct = async (updatedProduct: Product) => {
     try {
-      console.log("Updating product in database:", updatedProduct);
       const { error } = await supabase
         .from('products')
         .update({
@@ -136,7 +143,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         )
       );
 
-      // Notify success
       toast({
         title: "Product updated",
         description: `${updatedProduct.name} has been updated successfully`,
@@ -180,15 +186,59 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       throw error;
     }
   };
+  
+  const adjustStock = async (productId: string, quantity: number, isAddition: boolean) => {
+    try {
+      // Get the product
+      const product = products.find(p => p.id === productId);
+      if (!product) throw new Error("Product not found");
+      
+      // Calculate new stock
+      const newStock = isAddition 
+        ? product.stock + quantity 
+        : Math.max(0, product.stock - quantity);
+      
+      // Update in database first
+      const { error } = await supabase
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', productId);
+        
+      if (error) throw error;
+      
+      // Then update local state
+      const updatedProduct = { ...product, stock: newStock };
+      setProducts(prevProducts => 
+        prevProducts.map(p => p.id === productId ? updatedProduct : p)
+      );
+      
+      toast({
+        title: "Stock updated",
+        description: `${product.name} stock ${isAddition ? 'increased' : 'decreased'} by ${quantity}`,
+      });
+      
+      return updatedProduct;
+    } catch (error: any) {
+      console.error('Error adjusting stock:', error);
+      toast({
+        title: "Error adjusting stock",
+        description: error.message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
 
   return (
     <ProductContext.Provider value={{ 
       products, 
+      isLoading,
       updateProduct,
       refreshProducts,
       getProduct,
       addProduct,
-      deleteProduct
+      deleteProduct,
+      adjustStock
     }}>
       {children}
     </ProductContext.Provider>
