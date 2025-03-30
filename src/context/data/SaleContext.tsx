@@ -80,7 +80,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
 
   const addSale = async (sale: Omit<Sale, 'id'>) => {
     try {
-      console.log("Adding sale and updating product stock...");
+      console.log("Starting sale transaction and product stock update...");
       
       // First, verify stock availability again before completing sale
       for (const item of sale.products) {
@@ -136,7 +136,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         const newStock = productFromDB.stock - item.quantity;
         console.log(`Updating stock for ${productFromDB.name}: ${productFromDB.stock} -> ${newStock}`);
         
-        // Update product stock in the database
+        // Update product stock in the database - CRITICAL PART FOR STOCK UPDATE
         const { error: updateError } = await supabase
           .from('products')
           .update({ stock: newStock })

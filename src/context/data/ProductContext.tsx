@@ -49,8 +49,8 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         minStock: product.min_stock || undefined
       }));
       
+      console.log(`Refreshed ${typedProducts.length} products from database`);
       setProducts(typedProducts);
-      // Return void instead of the products array to match the interface
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
@@ -129,9 +129,13 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      // Refresh products from database to ensure we have the latest data
-      await refreshProducts();
-      
+      // After successful database update, update the local state
+      setProducts(prevProducts => 
+        prevProducts.map(product => 
+          product.id === updatedProduct.id ? updatedProduct : product
+        )
+      );
+
       // Notify success
       toast({
         title: "Product updated",

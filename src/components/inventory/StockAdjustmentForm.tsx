@@ -68,13 +68,18 @@ const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentForm
           break;
       }
 
+      console.log(`Adjusting stock for ${product.name}: ${product.stock} → ${newStock} (${adjustmentType})`);
+
       // First update directly in the database
       const { error } = await supabase
         .from('products')
         .update({ stock: newStock })
         .eq('id', productId);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Database update error:', error);
+        throw error;
+      }
       
       // Then update the product in the local state
       const updatedProduct = {
@@ -87,7 +92,7 @@ const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentForm
       // Ensure data consistency by refreshing products from database
       await refreshProducts();
       
-      console.log(`Stock adjustment: ${adjustmentType} ${quantity} units to product ${productId}. Reason: ${reason}`);
+      console.log(`Stock adjustment completed: ${adjustmentType} ${quantity} units to product ${productId}. Reason: ${reason}`);
       
       toast.success(`Stock ${adjustmentType === 'add' ? 'added' : adjustmentType === 'subtract' ? 'removed' : 'updated'} successfully`);
       
