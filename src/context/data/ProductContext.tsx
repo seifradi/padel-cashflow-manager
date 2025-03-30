@@ -49,7 +49,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       }));
       
       setProducts(typedProducts);
-      return typedProducts;
+      // Return void instead of the products array to match the interface
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
