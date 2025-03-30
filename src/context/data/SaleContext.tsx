@@ -1,5 +1,5 @@
 
-import { Product, Sale } from "@/lib/types";
+import { Product, Sale, ProductCategory } from "@/lib/types";
 import { ReactNode, createContext, useContext, useEffect, useState } from "react";
 import { useProducts } from "./ProductContext";
 import { supabase } from "@/integrations/supabase/client";
