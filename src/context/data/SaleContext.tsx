@@ -80,6 +80,8 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
 
   const addSale = async (sale: Omit<Sale, 'id'>) => {
     try {
+      console.log("Adding sale and updating product stock...");
+      
       // First, verify stock availability again before completing sale
       for (const item of sale.products) {
         const productFromDB = await getProductFromDB(item.productId);
@@ -130,17 +132,19 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
           continue;
         }
 
-        // Update product stock in the database
+        // Calculate new stock level
         const newStock = productFromDB.stock - item.quantity;
+        console.log(`Updating stock for ${productFromDB.name}: ${productFromDB.stock} -> ${newStock}`);
         
-        // Update directly in the database
+        // Update product stock in the database
         const { error: updateError } = await supabase
           .from('products')
           .update({ stock: newStock })
           .eq('id', item.productId);
         
         if (updateError) {
-          console.error('Error updating product stock directly:', updateError);
+          console.error('Error updating product stock:', updateError);
+          throw updateError;
         }
       }
 
@@ -155,9 +159,11 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         notes: sale.notes,
       };
 
+      // Update local state with the new sale
       setSales(prevSales => [newSale, ...prevSales]);
       
-      // Refresh products to ensure stock levels are up to date
+      // Make sure to refresh products to ensure stock levels are up to date everywhere in the UI
+      console.log("Refreshing products after sale to update stock levels in UI");
       await refreshProducts();
       
       toast({

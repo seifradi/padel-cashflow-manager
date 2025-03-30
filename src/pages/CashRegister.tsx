@@ -8,7 +8,9 @@ const CashRegister = () => {
   const { refreshProducts } = useProducts();
 
   // Ensure we have the latest product data when the page loads
+  // This ensures stock levels are current before any sales transactions
   useEffect(() => {
+    console.log("Cash Register page loaded, refreshing products...");
     refreshProducts();
   }, [refreshProducts]);
 
