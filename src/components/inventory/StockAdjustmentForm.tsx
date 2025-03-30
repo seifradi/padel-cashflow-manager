@@ -22,6 +22,7 @@ import { useData } from "@/context/DataContext";
 import { Product } from "@/lib/types";
 import AmountInput from "../common/AmountInput";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StockAdjustmentFormProps {
   isOpen: boolean;
@@ -66,20 +67,26 @@ const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentForm
           newStock = quantity;
           break;
       }
+
+      // First update directly in the database
+      const { error } = await supabase
+        .from('products')
+        .update({ stock: newStock })
+        .eq('id', productId);
+        
+      if (error) throw error;
       
-      // Update the product with new stock level
+      // Then update the product in the local state
       const updatedProduct = {
         ...product,
         stock: newStock
       };
       
-      // Update in database and local state
       await updateProduct(updatedProduct);
       
-      // Refresh products to ensure data consistency
+      // Ensure data consistency by refreshing products from database
       await refreshProducts();
       
-      // Record the adjustment in the console for now
       console.log(`Stock adjustment: ${adjustmentType} ${quantity} units to product ${productId}. Reason: ${reason}`);
       
       toast.success(`Stock ${adjustmentType === 'add' ? 'added' : adjustmentType === 'subtract' ? 'removed' : 'updated'} successfully`);

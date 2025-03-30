@@ -82,12 +82,12 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
     try {
       // First, verify stock availability again before completing sale
       for (const item of sale.products) {
-        const product = products.find(p => p.id === item.productId);
-        if (!product) {
+        const productFromDB = await getProductFromDB(item.productId);
+        if (!productFromDB) {
           throw new Error(`Product not found: ${item.productId}`);
         }
-        if (item.quantity > product.stock) {
-          throw new Error(`Not enough stock for product: ${product.name}`);
+        if (item.quantity > productFromDB.stock) {
+          throw new Error(`Not enough stock for product: ${productFromDB.name}`);
         }
       }
       
@@ -107,9 +107,10 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
 
       // Then insert sale items and update product stock
       for (const item of sale.products) {
-        const product = products.find(p => p.id === item.productId);
+        // Get the latest product data directly from the database
+        const productFromDB = await getProductFromDB(item.productId);
         
-        if (!product) {
+        if (!productFromDB) {
           console.error(`Product not found: ${item.productId}`);
           continue;
         }
@@ -130,16 +131,16 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         }
 
         // Update product stock in the database
-        const newStock = product.stock - item.quantity;
+        const newStock = productFromDB.stock - item.quantity;
         
-        try {
-          // Update the product in the database and local state
-          await updateProduct({
-            ...product,
-            stock: newStock
-          });
-        } catch (productError) {
-          console.error('Error updating product stock:', productError);
+        // Update directly in the database
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({ stock: newStock })
+          .eq('id', item.productId);
+        
+        if (updateError) {
+          console.error('Error updating product stock directly:', updateError);
         }
       }
 
@@ -154,7 +155,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         notes: sale.notes,
       };
 
-      setSales([newSale, ...sales]);
+      setSales(prevSales => [newSale, ...prevSales]);
       
       // Refresh products to ensure stock levels are up to date
       await refreshProducts();
@@ -173,6 +174,32 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       throw error;
+    }
+  };
+
+  // Helper function to get the most up-to-date product data directly from the database
+  const getProductFromDB = async (productId: string): Promise<Product | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', productId)
+        .single();
+      
+      if (error) throw error;
+      
+      return {
+        id: data.id,
+        name: data.name,
+        category: data.category as ProductCategory,
+        price: data.price,
+        cost: data.cost,
+        stock: data.stock,
+        minStock: data.min_stock || undefined
+      };
+    } catch (error) {
+      console.error('Error fetching product from database:', error);
+      return null;
     }
   };
 

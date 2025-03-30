@@ -30,6 +30,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshProducts = async () => {
     try {
+      console.log("Refreshing products from database");
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -92,7 +93,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         minStock: data.min_stock || undefined
       };
       
-      setProducts([...products, newProduct]);
+      setProducts(prevProducts => [...prevProducts, newProduct]);
       
       toast({
         title: "Product added",
@@ -128,10 +129,8 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      // Update local state after successful database update
-      setProducts(products.map(product => 
-        product.id === updatedProduct.id ? updatedProduct : product
-      ));
+      // Refresh products from database to ensure we have the latest data
+      await refreshProducts();
       
       // Notify success
       toast({
