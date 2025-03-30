@@ -4,7 +4,7 @@ import { CourtProvider, useCourts } from "./CourtContext";
 import { PlayerProvider, usePlayers } from "./PlayerContext";
 import { ProductProvider, useProducts } from "./ProductContext";
 import { BookingProvider, useBookings } from "./BookingContext";
-import { SaleProvider, useSales } from "./SaleContext";
+import { SaleProvider, useSales } from "./sale/SaleContext";
 import { ExpenseProvider, useExpenses } from "./ExpenseContext";
 import { DailyBalanceProvider, useDailyBalance } from "./DailyBalanceContext";
 import { supabase } from "@/integrations/supabase/client";
