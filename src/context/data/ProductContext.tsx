@@ -31,7 +31,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAuthenticated]);
 
-  const refreshProducts = async () => {
+  const refreshProducts = async (): Promise<void> => {
     try {
       setIsLoading(true);
       
@@ -55,8 +55,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       
       console.log(`Loaded ${typedProducts.length} products from database`);
       setProducts(typedProducts);
-      
-      return typedProducts;
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
@@ -120,7 +118,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const updateProduct = async (updatedProduct: Product) => {
+  const updateProduct = async (updatedProduct: Product): Promise<void> => {
     try {
       const { error } = await supabase
         .from('products')
@@ -159,7 +157,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = async (id: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('products')
@@ -187,7 +185,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const adjustStock = async (productId: string, quantity: number, isAddition: boolean) => {
+  const adjustStock = async (productId: string, quantity: number, isAddition: boolean): Promise<void> => {
     try {
       // Get the product
       const product = products.find(p => p.id === productId);
@@ -217,7 +215,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         description: `${product.name} stock ${isAddition ? 'increased' : 'decreased'} by ${quantity}`,
       });
       
-      return updatedProduct;
     } catch (error: any) {
       console.error('Error adjusting stock:', error);
       toast({

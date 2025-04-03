@@ -142,11 +142,9 @@ const StockAdjustmentDialog = ({
                 </Label>
                 <div className="col-span-3">
                   <AmountInput
-                    id="quantity"
                     value={quantity}
                     onChange={setQuantity}
                     min={0}
-                    step={1}
                     currency="Units"
                   />
                 </div>

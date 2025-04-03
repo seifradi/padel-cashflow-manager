@@ -155,7 +155,6 @@ const EditProductDialog = ({ open, onOpenChange, productId }: EditProductDialogP
                 </Label>
                 <div className="col-span-3">
                   <AmountInput
-                    id="price"
                     value={price}
                     onChange={setPrice}
                     min={0}
@@ -169,7 +168,6 @@ const EditProductDialog = ({ open, onOpenChange, productId }: EditProductDialogP
                 </Label>
                 <div className="col-span-3">
                   <AmountInput
-                    id="cost"
                     value={cost}
                     onChange={setCost}
                     min={0}
@@ -183,7 +181,6 @@ const EditProductDialog = ({ open, onOpenChange, productId }: EditProductDialogP
                 </Label>
                 <div className="col-span-3">
                   <AmountInput
-                    id="stock"
                     value={stock}
                     onChange={setStock}
                     min={0}
@@ -198,7 +195,6 @@ const EditProductDialog = ({ open, onOpenChange, productId }: EditProductDialogP
                 </Label>
                 <div className="col-span-3">
                   <AmountInput
-                    id="minStock"
                     value={minStock || 0}
                     onChange={setMinStock}
                     min={0}

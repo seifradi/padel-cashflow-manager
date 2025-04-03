@@ -370,7 +370,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      update_product_stock: {
+        Args: {
+          p_id: string
+          p_stock: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       booking_status: "pending" | "confirmed" | "cancelled" | "completed"
