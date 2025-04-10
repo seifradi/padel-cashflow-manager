@@ -1,6 +1,5 @@
-
 import { Product, ProductCategory } from "@/lib/types";
-import { ReactNode, createContext, useContext, useEffect, useState } from "react";
+import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
@@ -20,6 +19,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch products when the component mounts if user is authenticated
   useEffect(() => {
@@ -28,7 +28,16 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAuthenticated]);
 
-  const refreshProducts = async (): Promise<void> => {
+  const refreshProducts = useCallback(async (): Promise<void> => {
+    // Prevent concurrent refreshes
+    if (isRefreshing) {
+      console.log('Already refreshing products, skipping this call');
+      return;
+    }
+    
+    setIsRefreshing(true);
+    console.log('Starting product refresh');
+    
     try {
       const { data, error } = await supabase
         .from('products')
@@ -49,6 +58,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       }));
       
       setProducts(typedProducts);
+      console.log('Products refreshed successfully:', typedProducts.length);
     } catch (error: any) {
       console.error('Error fetching products:', error);
       toast({
@@ -56,8 +66,10 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         description: error.message,
         variant: "destructive",
       });
+    } finally {
+      setIsRefreshing(false);
     }
-  };
+  }, [isRefreshing, toast]);
 
   const updateProduct = async (updatedProduct: Product): Promise<void> => {
     try {
@@ -152,7 +164,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
-  const adjustStock = async (productId: string, quantity: number, isAddition: boolean): Promise<void> => {
+  const adjustStock = useCallback(async (productId: string, quantity: number, isAddition: boolean): Promise<void> => {
     try {
       const product = products.find(p => p.id === productId);
       if (!product) throw new Error("Product not found");
@@ -182,7 +194,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
     }
-  };
+  }, [products, toast]);
 
   return (
     <ProductContext.Provider value={{ 

@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,25 +34,20 @@ const SalesForm = () => {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [isProcessing, setIsProcessing] = useState(false);
   
-  // Filter products by category
   const filteredProducts = selectedCategory === "all"
     ? products
     : products.filter(product => product.category === selectedCategory);
   
-  // Add product to cart
   const addToCart = (productId: string) => {
     const product = products.find(p => p.id === productId);
     
     if (!product) return;
     
-    // Check if item already exists in cart
     const existingCartItem = cart.find(item => item.productId === productId);
     
     if (existingCartItem) {
-      // Increment quantity if product already in cart
       increaseQuantity(productId);
     } else {
-      // Add new item to cart
       setCart([
         ...cart,
         {
@@ -68,7 +62,6 @@ const SalesForm = () => {
     toast.success(`Added ${product.name} to cart`);
   };
   
-  // Increase cart item quantity
   const increaseQuantity = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -78,7 +71,6 @@ const SalesForm = () => {
         if (item.productId === productId) {
           const newQuantity = item.quantity + 1;
           
-          // Check if we have enough stock
           if (newQuantity > product.stock) {
             toast.error(`Not enough stock for ${product.name}`);
             return item;
@@ -91,7 +83,6 @@ const SalesForm = () => {
     );
   };
   
-  // Decrease cart item quantity
   const decreaseQuantity = (productId: string) => {
     setCart(
       cart.map(item => {
@@ -104,26 +95,30 @@ const SalesForm = () => {
     );
   };
   
-  // Remove item from cart
   const removeFromCart = (productId: string) => {
     setCart(cart.filter(item => item.productId !== productId));
   };
   
-  // Calculate total amount
   const calculateTotal = () => {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
   
-  // Handle checkout
   const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error("Cart is empty");
       return;
     }
     
+    if (isProcessing) {
+      toast.error("Sale is already being processed");
+      return;
+    }
+    
     setIsProcessing(true);
     
     try {
+      console.log('Starting checkout process');
+      
       const sale = {
         products: cart.map(item => ({
           productId: item.productId,
@@ -137,24 +132,27 @@ const SalesForm = () => {
         notes: notes,
       };
       
+      console.log('Sale prepared:', sale);
+      
       const result = await addSale(sale);
       
       if (result) {
         toast.success("Sale completed successfully");
         
-        // Reset form
         setCart([]);
         setNotes("");
+        console.log('Sale completed, form reset');
+      } else {
+        toast.error("Failed to complete sale");
       }
-    } catch (error) {
-      toast.error("Failed to complete sale");
-      console.error(error);
+    } catch (error: any) {
+      console.error('Sale error:', error);
+      toast.error(error.message || "Failed to complete sale");
     } finally {
       setIsProcessing(false);
     }
   };
   
-  // Get product stock
   const getProductStock = (productId: string) => {
     const product = products.find(p => p.id === productId);
     return product ? product.stock : 0;

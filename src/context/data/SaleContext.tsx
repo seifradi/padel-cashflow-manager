@@ -1,6 +1,6 @@
 
 import { Product, Sale } from "@/lib/types";
-import { ReactNode, createContext, useContext, useState } from "react";
+import { ReactNode, createContext, useCallback, useContext, useState } from "react";
 import { useProducts } from "./ProductContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -16,9 +16,20 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
   const [sales, setSales] = useState<Sale[]>([]);
   const { products, refreshProducts } = useProducts();
   const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const addSale = async (sale: Omit<Sale, 'id'>): Promise<Sale | null> => {
+  const addSale = useCallback(async (sale: Omit<Sale, 'id'>): Promise<Sale | null> => {
+    // Prevent multiple concurrent requests
+    if (isProcessing) {
+      console.log('Sale transaction already in progress');
+      return null;
+    }
+    
+    setIsProcessing(true);
+    
     try {
+      console.log('Starting sale transaction');
+      
       // 1. Insert the sale record
       const { data: saleData, error: saleError } = await supabase
         .from('sales')
@@ -32,6 +43,8 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         .single();
 
       if (saleError) throw saleError;
+      
+      console.log('Sale record created:', saleData.id);
 
       // 2. Insert the sale items
       const saleItems = sale.products.map(item => ({
@@ -46,6 +59,8 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         .insert(saleItems);
 
       if (itemsError) throw itemsError;
+      
+      console.log('Sale items added');
 
       // 3. Create the complete sale object
       const newSale = {
@@ -53,12 +68,12 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         id: saleData.id
       };
 
-      setSales([...sales, newSale]);
+      setSales(prev => [...prev, newSale]);
       
-      // 4. Refresh products to get updated stock levels
+      // 4. Refresh products to get updated stock levels (only once)
       await refreshProducts();
       
-      // The database trigger will handle stock updates!
+      console.log('Products refreshed after sale');
       
       return newSale;
     } catch (error: any) {
@@ -69,8 +84,12 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
       return null;
+    } finally {
+      // Always reset processing state when done
+      setIsProcessing(false);
+      console.log('Sale transaction completed, processing state reset');
     }
-  };
+  }, [isProcessing, products, refreshProducts, toast]);
 
   return (
     <SaleContext.Provider value={{ sales, addSale }}>
