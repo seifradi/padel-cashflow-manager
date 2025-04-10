@@ -33,6 +33,7 @@ const SalesForm = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [isProcessing, setIsProcessing] = useState(false);
   
   // Filter products by category
   const filteredProducts = selectedCategory === "all"
@@ -114,11 +115,13 @@ const SalesForm = () => {
   };
   
   // Handle checkout
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (cart.length === 0) {
       toast.error("Cart is empty");
       return;
     }
+    
+    setIsProcessing(true);
     
     try {
       const sale = {
@@ -134,17 +137,27 @@ const SalesForm = () => {
         notes: notes,
       };
       
-      addSale(sale);
+      const result = await addSale(sale);
       
-      toast.success("Sale completed successfully");
-      
-      // Reset form
-      setCart([]);
-      setNotes("");
+      if (result) {
+        toast.success("Sale completed successfully");
+        
+        // Reset form
+        setCart([]);
+        setNotes("");
+      }
     } catch (error) {
       toast.error("Failed to complete sale");
       console.error(error);
+    } finally {
+      setIsProcessing(false);
     }
+  };
+  
+  // Get product stock
+  const getProductStock = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    return product ? product.stock : 0;
   };
   
   return (
@@ -246,10 +259,15 @@ const SalesForm = () => {
                           variant="outline"
                           className="h-6 w-6 rounded-full"
                           onClick={() => increaseQuantity(item.productId)}
+                          disabled={item.quantity >= getProductStock(item.productId)}
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
                       </div>
+                    </div>
+                    
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Available stock: {getProductStock(item.productId)}
                     </div>
                   </div>
                 ))}
@@ -295,9 +313,9 @@ const SalesForm = () => {
                 <Button
                   className="w-full"
                   onClick={handleCheckout}
-                  disabled={cart.length === 0}
+                  disabled={cart.length === 0 || isProcessing}
                 >
-                  Complete Sale
+                  {isProcessing ? "Processing..." : "Complete Sale"}
                 </Button>
               </div>
             </div>
