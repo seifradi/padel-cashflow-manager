@@ -159,12 +159,14 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log(`Adjusting stock for product ${productId}: ${isAddition ? '+' : '-'}${quantity}`);
       
-      const { error } = await supabase
-        .rpc('adjust_product_stock', {
+      const { error } = await supabase.rpc(
+        'adjust_product_stock',
+        {
           product_id_param: productId,
           quantity_param: quantity,
           is_addition: isAddition
-        });
+        }
+      );
         
       if (error) throw error;
       
