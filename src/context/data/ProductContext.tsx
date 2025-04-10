@@ -1,4 +1,3 @@
-
 import { Product, ProductCategory } from "@/lib/types";
 import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,7 +21,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fetch products when the component mounts if user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
       refreshProducts();
@@ -30,7 +28,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   }, [isAuthenticated]);
 
   const refreshProducts = useCallback(async (): Promise<void> => {
-    // Prevent concurrent refreshes
     if (isRefreshing) {
       console.log('Already refreshing products, skipping this call');
       return;
@@ -47,7 +44,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       
       if (error) throw error;
       
-      // Convert Supabase data to our app's Product type
       const typedProducts: Product[] = data.map(product => ({
         id: product.id,
         name: product.name,
@@ -91,8 +87,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       setProducts(products.map(product => 
         product.id === updatedProduct.id ? updatedProduct : product
       ));
-      
-      // Our triggers will automatically update the product_inventory table
     } catch (error: any) {
       console.error('Error updating product:', error);
       toast({
@@ -131,8 +125,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       };
 
       setProducts([...products, newProduct]);
-      
-      // Our trigger will automatically create the product_inventory record
     } catch (error: any) {
       console.error('Error adding product:', error);
       toast({
@@ -153,8 +145,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       setProducts(products.filter(product => product.id !== productId));
-      
-      // The CASCADE constraint will automatically delete the product_inventory record
     } catch (error: any) {
       console.error('Error deleting product:', error);
       toast({
@@ -169,7 +159,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log(`Adjusting stock for product ${productId}: ${isAddition ? '+' : '-'}${quantity}`);
       
-      // Call the new database function to adjust stock
       const { error } = await supabase
         .rpc('adjust_product_stock', {
           product_id_param: productId,
@@ -179,7 +168,6 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         
       if (error) throw error;
       
-      // Refresh the products to get the updated stock levels
       await refreshProducts();
       
       const product = products.find(p => p.id === productId);

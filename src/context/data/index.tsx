@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const useData = () => {
   const { courts, refreshCourts } = useCourts();
   const { players, addPlayer, updatePlayer, refreshPlayers } = usePlayers();
-  const { products, updateProduct, refreshProducts } = useProducts();
+  const { products, updateProduct, refreshProducts, addProduct, deleteProduct, adjustStock } = useProducts();
   const { bookings, addBooking, updateBooking, refreshBookings } = useBookings();
   const { sales, addSale } = useSales();
   const { expenses, addExpense } = useExpenses();
@@ -43,6 +43,9 @@ export const useData = () => {
     products,
     updateProduct,
     refreshProducts,
+    addProduct,
+    deleteProduct,
+    adjustStock,
     
     // Bookings
     bookings,
