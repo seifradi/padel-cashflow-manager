@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useData } from "@/context/DataContext";
 import { PRODUCT_CATEGORIES } from "@/lib/constants";
@@ -32,9 +31,11 @@ import ProductDetails from "./ProductDetails";
 import DeleteProductConfirmation from "./DeleteProductConfirmation";
 import BulkImportForm from "./BulkImportForm";
 import { Product } from "@/lib/types";
+import { useLocation } from "react-router-dom";
 
 const InventoryPage = () => {
   const { products, refreshProducts } = useData();
+  const location = useLocation();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
@@ -50,8 +51,17 @@ const InventoryPage = () => {
   
   // Refresh products when component mounts
   useEffect(() => {
+    console.log("Inventory page mounted, refreshing products");
     refreshProducts();
   }, [refreshProducts]);
+  
+  // Add a refresh when returning to this page
+  useEffect(() => {
+    console.log("Location changed to inventory page, refreshing products");
+    if (location.pathname === '/inventory') {
+      refreshProducts();
+    }
+  }, [location, refreshProducts]);
   
   // Filter products by search term, category, and stock status
   const filteredProducts = products

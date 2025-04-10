@@ -72,6 +72,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
       
       // 4. Refresh products to get updated stock levels
       // The trigger we created will handle updating both product and product_inventory tables
+      console.log('Refreshing products after sale');
       await refreshProducts();
       
       console.log('Products refreshed after sale');

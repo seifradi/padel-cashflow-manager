@@ -1,3 +1,4 @@
+
 import { Product, ProductCategory } from "@/lib/types";
 import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const { isAuthenticated } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshRequestQueue, setRefreshRequestQueue] = useState<number>(0);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -27,9 +29,18 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAuthenticated]);
 
+  // Additional effect to handle queued refresh requests
+  useEffect(() => {
+    if (refreshRequestQueue > 0 && !isRefreshing) {
+      setRefreshRequestQueue(0);
+      refreshProducts();
+    }
+  }, [refreshRequestQueue, isRefreshing]);
+
   const refreshProducts = useCallback(async (): Promise<void> => {
     if (isRefreshing) {
-      console.log('Already refreshing products, skipping this call');
+      console.log('Already refreshing products, queuing another refresh');
+      setRefreshRequestQueue(prev => prev + 1);
       return;
     }
     
