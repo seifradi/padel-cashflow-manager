@@ -4,7 +4,7 @@ import { CourtProvider, useCourts } from "./CourtContext";
 import { PlayerProvider, usePlayers } from "./PlayerContext";
 import { ProductProvider, useProducts } from "./ProductContext";
 import { BookingProvider, useBookings } from "./BookingContext";
-import { SaleProvider, useSales } from "./sale/SaleContext";
+import { SaleProvider, useSales } from "./SaleContext";
 import { ExpenseProvider, useExpenses } from "./ExpenseContext";
 import { DailyBalanceProvider, useDailyBalance } from "./DailyBalanceContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,9 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 export const useData = () => {
   const { courts, refreshCourts } = useCourts();
   const { players, addPlayer, updatePlayer, refreshPlayers } = usePlayers();
-  const { products, updateProduct, refreshProducts, getProduct, addProduct, deleteProduct } = useProducts();
+  const { products, updateProduct, refreshProducts } = useProducts();
   const { bookings, addBooking, updateBooking, refreshBookings } = useBookings();
-  const { sales, addSale, refreshSales } = useSales();
+  const { sales, addSale } = useSales();
   const { expenses, addExpense } = useExpenses();
   const { dailyBalances, getCurrentDailyBalance, startDay, closeDay } = useDailyBalance();
 
@@ -24,8 +24,7 @@ export const useData = () => {
       refreshCourts(),
       refreshPlayers(),
       refreshProducts(),
-      refreshBookings(),
-      refreshSales()
+      refreshBookings()
     ]);
   };
 
@@ -44,9 +43,6 @@ export const useData = () => {
     products,
     updateProduct,
     refreshProducts,
-    getProduct,
-    addProduct,
-    deleteProduct,
     
     // Bookings
     bookings,
@@ -57,7 +53,6 @@ export const useData = () => {
     // Sales
     sales,
     addSale,
-    refreshSales,
     
     // Expenses
     expenses,

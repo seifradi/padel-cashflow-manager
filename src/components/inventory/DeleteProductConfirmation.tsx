@@ -27,7 +27,7 @@ const DeleteProductConfirmation = ({
   productId,
   onDeleted
 }: DeleteProductConfirmationProps) => {
-  const { products, deleteProduct } = useData();
+  const { products, supabase } = useData();
   const [isDeleting, setIsDeleting] = useState(false);
   
   const product = productId 
@@ -40,7 +40,12 @@ const DeleteProductConfirmation = ({
     try {
       setIsDeleting(true);
       
-      await deleteProduct(productId);
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+      
+      if (error) throw error;
       
       toast.success("Product deleted successfully");
       onOpenChange(false);

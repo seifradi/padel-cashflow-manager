@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -22,7 +23,6 @@ import { useData } from "@/context/DataContext";
 import { Product } from "@/lib/types";
 import AmountInput from "../common/AmountInput";
 import { Textarea } from "@/components/ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
 
 interface StockAdjustmentFormProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ interface StockAdjustmentFormProps {
 }
 
 const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentFormProps) => {
-  const { products, updateProduct, refreshProducts } = useData();
+  const { products, updateProduct } = useData();
   
   const [adjustmentType, setAdjustmentType] = useState<'add' | 'subtract' | 'set'>('add');
   const [quantity, setQuantity] = useState(0);
@@ -67,40 +67,14 @@ const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentForm
           newStock = quantity;
           break;
       }
-
-      console.log(`Adjusting stock for ${product.name}: ${product.stock} → ${newStock} (${adjustmentType})`);
-
-      // First update directly in the database
-      const { error } = await supabase
-        .from('products')
-        .update({ stock: newStock })
-        .eq('id', productId);
-        
-      if (error) {
-        console.error('Database update error:', error);
-        throw error;
-      }
       
-      // Then update the product in the local state
-      const updatedProduct = {
+      await updateProduct({
         ...product,
         stock: newStock
-      };
-      
-      await updateProduct(updatedProduct);
-      
-      // Ensure data consistency by refreshing products from database
-      await refreshProducts();
-      
-      console.log(`Stock adjustment completed: ${adjustmentType} ${quantity} units to product ${productId}. Reason: ${reason}`);
+      });
       
       toast.success(`Stock ${adjustmentType === 'add' ? 'added' : adjustmentType === 'subtract' ? 'removed' : 'updated'} successfully`);
-      
-      // Reset form and close dialog
-      setQuantity(0);
-      setReason("");
       onClose();
-      
     } catch (error: any) {
       console.error('Error adjusting stock:', error);
       toast.error(`Error adjusting stock: ${error.message}`);

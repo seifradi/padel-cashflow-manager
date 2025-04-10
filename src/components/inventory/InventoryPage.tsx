@@ -1,136 +1,151 @@
 
-import { useEffect, useState } from "react";
-import { useProducts } from "@/context/data/ProductContext";
-import { Product, ProductCategory } from "@/lib/types";
-import { PRODUCT_CATEGORIES } from "@/lib/constants";
-import PageTitle from "../common/PageTitle";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { useData } from "@/context/DataContext";
+import { PRODUCT_CATEGORIES } from "@/lib/constants";
 import { 
   Package, 
   Plus, 
-  RefreshCw, 
-  Search, 
   AlertCircle,
   ShoppingCart,
-  Download,
-  Upload
+  ArrowUpDown,
+  Download
 } from "lucide-react";
-import ProductList from "./ProductList";
-import ProductTable from "./ProductTable";
-import ProductCard from "./ProductCard";
-import AddProductDialog from "./AddProductDialog";
-import EditProductDialog from "./EditProductDialog";
-import StockAdjustmentDialog from "./StockAdjustmentDialog";
-import DeleteProductDialog from "./DeleteProductDialog";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import PageTitle from "../common/PageTitle";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import StatusBadge from "../common/StatusBadge";
+import AddProductForm from "./AddProductForm";
+import EditProductForm from "./EditProductForm";
+import StockAdjustmentForm from "./StockAdjustmentForm";
+import InventoryFilters from "./InventoryFilters";
 import ProductDetails from "./ProductDetails";
-import ImportProductsDialog from "./ImportProductsDialog";
+import DeleteProductConfirmation from "./DeleteProductConfirmation";
+import BulkImportForm from "./BulkImportForm";
+import { Product } from "@/lib/types";
 
 const InventoryPage = () => {
-  const { products, refreshProducts, isLoading } = useProducts();
-  
-  // UI state
+  const { products, refreshProducts } = useData();
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [stockFilter, setStockFilter] = useState<string>("all");
-  const [view, setView] = useState<string>("grid");
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  
-  // Dialog states
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isStockDialogOpen, setIsStockDialogOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [isAddProductDialogOpen, setIsAddProductDialogOpen] = useState(false);
+  const [isEditProductDialogOpen, setIsEditProductDialogOpen] = useState(false);
+  const [isStockAdjustDialogOpen, setIsStockAdjustDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null);
+  const [selectedProductForDetails, setSelectedProductForDetails] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'category' | 'stock' | 'price'>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
-  // Selected product for details view
-  const [detailsProduct, setDetailsProduct] = useState<Product | null>(null);
-  
+  // Refresh products when component mounts
   useEffect(() => {
-    // Initial data load
     refreshProducts();
   }, [refreshProducts]);
   
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refreshProducts();
-      toast.success("Inventory data refreshed");
-    } catch (error) {
-      // Error already handled in context
-    } finally {
-      setIsRefreshing(false);
-    }
+  // Filter products by search term, category, and stock status
+  const filteredProducts = products
+    .filter((product) => {
+      const matchesSearch = product.name
+        .toLowerCase()
+        .includes(search.toLowerCase());
+      
+      const matchesCategory =
+        categoryFilter === "all" || product.category === categoryFilter;
+      
+      let matchesStock = true;
+      if (stockFilter === "low") {
+        matchesStock = !!product.minStock && product.stock <= product.minStock && product.stock > 0;
+      } else if (stockFilter === "out") {
+        matchesStock = product.stock === 0;
+      } else if (stockFilter === "in") {
+        matchesStock = product.stock > 0 && (!product.minStock || product.stock > product.minStock);
+      }
+      
+      return matchesSearch && matchesCategory && matchesStock;
+    })
+    .sort((a, b) => {
+      if (sortDirection === 'asc') {
+        return a[sortBy] > b[sortBy] ? 1 : -1;
+      } else {
+        return a[sortBy] < b[sortBy] ? 1 : -1;
+      }
+    });
+  
+  // Group products by category for the tabular view
+  const productsByCategory = PRODUCT_CATEGORIES.reduce((acc, category) => {
+    acc[category.id] = filteredProducts.filter(
+      (product) => product.category === category.id
+    );
+    return acc;
+  }, {} as Record<string, typeof products>);
+  
+  // Open product details
+  const openProductDetails = (productId: string) => {
+    setSelectedProductForDetails(productId);
   };
   
-  const openAddDialog = () => setIsAddDialogOpen(true);
-  
-  const openEditDialog = (productId: string) => {
-    setSelectedProductId(productId);
-    setIsEditDialogOpen(true);
+  // Handle edit product
+  const handleEditProduct = (productId: string) => {
+    setSelectedProduct(productId);
+    setIsEditProductDialogOpen(true);
   };
   
-  const openStockDialog = (productId: string) => {
-    setSelectedProductId(productId);
-    setIsStockDialogOpen(true);
+  // Handle stock adjustment
+  const handleStockAdjust = (productId: string) => {
+    setSelectedProduct(productId);
+    setIsStockAdjustDialogOpen(true);
   };
   
-  const openDeleteDialog = (productId: string) => {
-    setSelectedProductId(productId);
+  // Handle delete product
+  const handleDeleteProduct = (productId: string) => {
+    setSelectedProduct(productId);
     setIsDeleteDialogOpen(true);
   };
-  
-  const viewProductDetails = (product: Product) => {
-    setDetailsProduct(product);
-    setView("details");
-  };
-  
-  const closeDetails = () => {
-    setDetailsProduct(null);
-    setView("grid");
-  };
 
-  // Filter products based on search, category, and stock filters
-  const filteredProducts = products.filter(product => {
-    // Search filter
-    const matchesSearch = product.name.toLowerCase().includes(search.toLowerCase());
-    
-    // Category filter
-    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
-    
-    // Stock filter
-    let matchesStock = true;
-    if (stockFilter === "low") {
-      matchesStock = Boolean(product.minStock && product.stock <= product.minStock && product.stock > 0);
-    } else if (stockFilter === "out") {
-      matchesStock = product.stock === 0;
-    } else if (stockFilter === "in") {
-      matchesStock = product.stock > 0 && (!product.minStock || product.stock > product.minStock);
+  // Toggle sort direction
+  const toggleSort = (field: 'name' | 'category' | 'stock' | 'price') => {
+    if (sortBy === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortDirection('asc');
     }
-    
-    return matchesSearch && matchesCategory && matchesStock;
-  });
-  
-  // Calculate inventory stats
-  const lowStockCount = products.filter(p => p.minStock && p.stock <= p.minStock && p.stock > 0).length;
-  const outOfStockCount = products.filter(p => p.stock === 0).length;
-  
-  const calculateTotalValue = () => {
-    return products.reduce((total, product) => total + product.price * product.stock, 0);
   };
   
+  // Calculate total inventory value
+  const calculateTotalValue = () => {
+    return products.reduce((total, product) => {
+      return total + product.price * product.stock;
+    }, 0);
+  };
+  
+  // Count low stock items
+  const lowStockCount = products.filter(
+    (product) => product.minStock && product.stock <= product.minStock && product.stock > 0
+  ).length;
+  
+  // Count out of stock items
+  const outOfStockCount = products.filter(
+    (product) => product.stock === 0
+  ).length;
+
+  // Export to CSV
   const handleExportCSV = () => {
+    // Headers
     const headers = ['name', 'category', 'price', 'cost', 'stock', 'min_stock'];
+    
+    // Data rows
     const rows = products.map(product => [
       product.name,
       product.category,
@@ -140,11 +155,13 @@ const InventoryPage = () => {
       (product.minStock || '').toString()
     ]);
     
+    // Combine and create CSV content
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.join(','))
     ].join('\n');
     
+    // Create blob and download
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -160,26 +177,13 @@ const InventoryPage = () => {
   
   return (
     <div className="space-y-6">
-      {/* Header with title and refresh button */}
-      <div className="flex justify-between items-center">
-        <PageTitle 
-          title="Inventory Management" 
-          subtitle="Track and manage products and supplies"
-        />
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh} 
-          disabled={isRefreshing || isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
-        </Button>
-      </div>
+      <PageTitle 
+        title="Inventory Management" 
+        subtitle="Track and manage products and supplies"
+      />
       
-      {/* Stats cards */}
       <div className="grid gap-6 md:grid-cols-3">
-        <div className="bg-card rounded-lg border shadow-sm flex items-center p-4 animate-fade-in">
+        <div className="bg-card rounded-lg border shadow-sm flex items-center p-4 animate-slide-in [animation-delay:0ms]">
           <div className="bg-primary/10 rounded-full p-3 mr-4">
             <Package className="h-6 w-6 text-primary" />
           </div>
@@ -189,7 +193,7 @@ const InventoryPage = () => {
           </div>
         </div>
         
-        <div className="bg-card rounded-lg border shadow-sm flex items-center p-4 animate-fade-in">
+        <div className="bg-card rounded-lg border shadow-sm flex items-center p-4 animate-slide-in [animation-delay:100ms]">
           <div className="bg-yellow-100 rounded-full p-3 mr-4">
             <AlertCircle className="h-6 w-6 text-yellow-600" />
           </div>
@@ -203,7 +207,7 @@ const InventoryPage = () => {
           </div>
         </div>
         
-        <div className="bg-card rounded-lg border shadow-sm flex items-center p-4 animate-fade-in">
+        <div className="bg-card rounded-lg border shadow-sm flex items-center p-4 animate-slide-in [animation-delay:200ms]">
           <div className="bg-blue-100 rounded-full p-3 mr-4">
             <ShoppingCart className="h-6 w-6 text-blue-600" />
           </div>
@@ -214,114 +218,204 @@ const InventoryPage = () => {
         </div>
       </div>
       
-      {/* Main content */}
-      <div className="bg-card rounded-lg border shadow-sm">
+      <div className="bg-card rounded-lg border shadow-sm animate-slide-in [animation-delay:300ms]">
         <div className="p-6">
-          {/* Filters and actions */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1 flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search products..."
-                  className="pl-8"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {PRODUCT_CATEGORIES.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={stockFilter} onValueChange={setStockFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Stock Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Stock</SelectItem>
-                  <SelectItem value="in">In Stock</SelectItem>
-                  <SelectItem value="low">Low Stock</SelectItem>
-                  <SelectItem value="out">Out of Stock</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button onClick={openAddDialog} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
-              
-              <Button onClick={handleExportCSV} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-              
-              <Button onClick={() => setIsImportDialogOpen(true)} variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-            </div>
-          </div>
+          <InventoryFilters 
+            search={search}
+            onSearchChange={setSearch}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+            stockFilter={stockFilter}
+            onStockFilterChange={setStockFilter}
+            onAddProduct={() => setIsAddProductDialogOpen(true)}
+            onExportCSV={handleExportCSV}
+            onImportCSV={() => setIsImportDialogOpen(true)}
+          />
           
-          {/* Product views */}
-          <Tabs value={view} onValueChange={setView}>
-            <TabsList>
+          <Tabs defaultValue="grid">
+            <TabsList className="mb-4">
               <TabsTrigger value="grid">Grid View</TabsTrigger>
               <TabsTrigger value="table">Table View</TabsTrigger>
               <TabsTrigger value="category">Category View</TabsTrigger>
-              {detailsProduct && (
+              {selectedProductForDetails && (
                 <TabsTrigger value="details">Product Details</TabsTrigger>
               )}
             </TabsList>
             
-            <TabsContent value="grid" className="mt-6">
-              <ProductList 
-                products={filteredProducts} 
-                onSelect={viewProductDetails} 
-              />
+            <TabsContent value="grid" className="mt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredProducts.length > 0 ? (
+                  filteredProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="border rounded-lg p-4 transition-colors hover:border-primary/30 hover:shadow-md cursor-pointer"
+                      onClick={() => openProductDetails(product.id)}
+                    >
+                      <div className="flex justify-between">
+                        <div>
+                          <h3 className="font-medium truncate">{product.name}</h3>
+                          <Badge variant="outline" className="mt-1 capitalize">
+                            {product.category}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-3 space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Price:</span>
+                          <span className="font-medium">{product.price} TNd</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Cost:</span>
+                          <span className="font-medium">{product.cost} TNd</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">Stock:</span>
+                          <span className="font-medium">
+                            {product.stock === 0 ? (
+                              <StatusBadge status="error">Out of Stock</StatusBadge>
+                            ) : product.minStock && product.stock <= product.minStock ? (
+                              <StatusBadge status="warning">Low Stock ({product.stock})</StatusBadge>
+                            ) : (
+                              <StatusBadge status="success">{product.stock} units</StatusBadge>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-full py-8 text-center text-muted-foreground">
+                    No products found matching your criteria
+                  </div>
+                )}
+              </div>
             </TabsContent>
             
-            <TabsContent value="table" className="mt-6">
-              <ProductTable 
-                products={filteredProducts} 
-                onView={viewProductDetails}
-                onEdit={openEditDialog}
-                onStockAdjust={openStockDialog}
-                onDelete={openDeleteDialog}
-              />
+            <TabsContent value="table" className="mt-0">
+              <div className="border rounded-md">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="cursor-pointer" onClick={() => toggleSort('name')}>
+                        Name
+                        {sortBy === 'name' && (
+                          <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                        )}
+                      </TableHead>
+                      <TableHead className="cursor-pointer" onClick={() => toggleSort('category')}>
+                        Category
+                        {sortBy === 'category' && (
+                          <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                        )}
+                      </TableHead>
+                      <TableHead className="text-right cursor-pointer" onClick={() => toggleSort('price')}>
+                        Price
+                        {sortBy === 'price' && (
+                          <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                        )}
+                      </TableHead>
+                      <TableHead className="text-right cursor-pointer" onClick={() => toggleSort('stock')}>
+                        Stock
+                        {sortBy === 'stock' && (
+                          <ArrowUpDown className="ml-2 h-4 w-4 inline" />
+                        )}
+                      </TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProducts.length > 0 ? (
+                      filteredProducts.map((product) => (
+                        <TableRow 
+                          key={product.id}
+                          className="cursor-pointer"
+                          onClick={() => openProductDetails(product.id)}
+                        >
+                          <TableCell className="font-medium">{product.name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="capitalize">
+                              {product.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">{product.price} TNd</TableCell>
+                          <TableCell className="text-right">
+                            {product.stock === 0 ? (
+                              <StatusBadge status="error">Out of Stock</StatusBadge>
+                            ) : product.minStock && product.stock <= product.minStock ? (
+                              <StatusBadge status="warning">Low ({product.stock})</StatusBadge>
+                            ) : (
+                              product.stock
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end space-x-1">
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditProduct(product.id);
+                                }}
+                              >
+                                <ArrowUpDown className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                          No products found matching your criteria
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </TabsContent>
             
-            <TabsContent value="category" className="mt-6">
+            <TabsContent value="category" className="mt-0">
               <div className="space-y-6">
                 {PRODUCT_CATEGORIES.map((category) => {
-                  const categoryProducts = filteredProducts.filter(
-                    (p) => p.category === category.id
-                  );
-                  
+                  const categoryProducts = productsByCategory[category.id] || [];
                   if (categoryProducts.length === 0) return null;
                   
                   return (
                     <div key={category.id} className="border rounded-lg p-4">
                       <h3 className="text-lg font-semibold mb-4">{category.name}</h3>
+                      
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {categoryProducts.map((product) => (
-                          <ProductCard
+                          <div
                             key={product.id}
-                            product={product}
-                            onClick={() => viewProductDetails(product)}
-                          />
+                            className="border rounded-lg p-4 transition-colors hover:border-primary/30 hover:shadow-md cursor-pointer"
+                            onClick={() => openProductDetails(product.id)}
+                          >
+                            <div className="flex justify-between">
+                              <h4 className="font-medium truncate">{product.name}</h4>
+                            </div>
+                            
+                            <div className="mt-3 space-y-1">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Price:</span>
+                                <span className="font-medium">{product.price} TNd</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">Stock:</span>
+                                <span className="font-medium">
+                                  {product.stock === 0 ? (
+                                    <StatusBadge status="error">Out of Stock</StatusBadge>
+                                  ) : product.minStock && product.stock <= product.minStock ? (
+                                    <StatusBadge status="warning">Low Stock</StatusBadge>
+                                  ) : (
+                                    <StatusBadge status="success">{product.stock}</StatusBadge>
+                                  )}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -330,59 +424,57 @@ const InventoryPage = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="details" className="mt-6">
-              {detailsProduct && (
-                <div className="max-w-3xl mx-auto">
-                  <ProductDetails
-                    product={detailsProduct}
-                    onBack={closeDetails}
-                    onEdit={() => openEditDialog(detailsProduct.id)}
-                    onStockAdjust={() => openStockDialog(detailsProduct.id)}
-                    onDelete={() => openDeleteDialog(detailsProduct.id)}
-                  />
-                </div>
-              )}
-            </TabsContent>
+            {selectedProductForDetails && (
+              <TabsContent value="details" className="mt-0">
+                {selectedProductForDetails && products.find(p => p.id === selectedProductForDetails) && (
+                  <div className="max-w-3xl mx-auto">
+                    <ProductDetails 
+                      product={products.find(p => p.id === selectedProductForDetails) as Product}
+                      onEdit={() => handleEditProduct(selectedProductForDetails)}
+                      onStockAdjust={() => handleStockAdjust(selectedProductForDetails)}
+                      onDelete={() => handleDeleteProduct(selectedProductForDetails)}
+                    />
+                  </div>
+                )}
+              </TabsContent>
+            )}
           </Tabs>
-          
-          {/* Show message when no products match filters */}
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="mx-auto h-12 w-12 mb-4 opacity-20" />
-              <h3 className="text-lg font-medium mb-1">No products found</h3>
-              <p>Try adjusting your search or filters</p>
-            </div>
-          )}
         </div>
       </div>
       
-      {/* Dialogs */}
-      <AddProductDialog
-        open={isAddDialogOpen}
-        onOpenChange={setIsAddDialogOpen}
+      <AddProductForm 
+        isOpen={isAddProductDialogOpen} 
+        onClose={() => setIsAddProductDialogOpen(false)} 
       />
       
-      <EditProductDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        productId={selectedProductId}
+      <EditProductForm 
+        isOpen={isEditProductDialogOpen}
+        onClose={() => setIsEditProductDialogOpen(false)}
+        productId={selectedProduct}
       />
       
-      <StockAdjustmentDialog
-        open={isStockDialogOpen}
-        onOpenChange={setIsStockDialogOpen}
-        productId={selectedProductId}
+      <StockAdjustmentForm
+        isOpen={isStockAdjustDialogOpen}
+        onClose={() => setIsStockAdjustDialogOpen(false)}
+        productId={selectedProduct}
       />
       
-      <DeleteProductDialog
-        open={isDeleteDialogOpen}
+      <DeleteProductConfirmation
+        isOpen={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
-        productId={selectedProductId}
+        productId={selectedProduct}
+        onDeleted={() => {
+          refreshProducts();
+          if (selectedProductForDetails === selectedProduct) {
+            setSelectedProductForDetails(null);
+          }
+        }}
       />
       
-      <ImportProductsDialog
-        open={isImportDialogOpen}
-        onOpenChange={setIsImportDialogOpen}
+      <BulkImportForm
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onImported={refreshProducts}
       />
     </div>
   );

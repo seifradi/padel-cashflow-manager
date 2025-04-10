@@ -2,7 +2,7 @@
 import { DailyBalance } from "@/lib/types";
 import { ReactNode, createContext, useContext, useState } from "react";
 import { useBookings } from "./BookingContext";
-import { useSales } from "./sale/useSaleContext";
+import { useSales } from "./SaleContext";
 import { useExpenses } from "./ExpenseContext";
 
 interface DailyBalanceContextType {
@@ -84,7 +84,6 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
     const currentBalance = getCurrentDailyBalance();
     const calculatedAmount = (currentBalance?.startingAmount || 0) + calculateDailyTotal();
     const difference = cashInRegister - calculatedAmount;
-    const now = new Date();
     
     const updatedBalance: DailyBalance = {
       ...(currentBalance || {
@@ -97,9 +96,7 @@ export const DailyBalanceProvider = ({ children }: { children: ReactNode }) => {
       difference,
       notes,
       closedBy: userId,
-      closedAt: now,
-      verifiedBy: userId,
-      verifiedAt: now
+      closedAt: new Date()
     } as DailyBalance;
     
     setDailyBalances(dailyBalances.map(balance => 

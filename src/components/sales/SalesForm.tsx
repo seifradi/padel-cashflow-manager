@@ -14,7 +14,7 @@ import { useData } from "@/context/DataContext";
 import { PAYMENT_METHODS, PRODUCT_CATEGORIES } from "@/lib/constants";
 import { ProductCategory } from "@/lib/types";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import Card from "../common/Card";
 import AmountInput from "../common/AmountInput";
@@ -27,18 +27,12 @@ interface CartItem {
 }
 
 const SalesForm = () => {
-  const { products, addSale, refreshProducts } = useData();
+  const { products, addSale } = useData();
   const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | "all">("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Refresh products when component mounts to ensure we have the latest stock data
-  useEffect(() => {
-    refreshProducts();
-  }, []);
   
   // Filter products by category
   const filteredProducts = selectedCategory === "all"
@@ -120,29 +114,13 @@ const SalesForm = () => {
   };
   
   // Handle checkout
-  const handleCheckout = async () => {
+  const handleCheckout = () => {
     if (cart.length === 0) {
       toast.error("Cart is empty");
       return;
     }
     
-    // Verify stock availability again before completing sale
-    const stockIssues = [];
-    for (const item of cart) {
-      const product = products.find(p => p.id === item.productId);
-      if (product && item.quantity > product.stock) {
-        stockIssues.push(`Not enough stock for ${item.name}: ${product.stock} available`);
-      }
-    }
-    
-    if (stockIssues.length > 0) {
-      stockIssues.forEach(issue => toast.error(issue));
-      return;
-    }
-    
     try {
-      setIsSubmitting(true);
-      
       const sale = {
         products: cart.map(item => ({
           productId: item.productId,
@@ -156,22 +134,16 @@ const SalesForm = () => {
         notes: notes,
       };
       
-      console.log("Processing sale:", sale);
-      await addSale(sale);
+      addSale(sale);
       
-      // After successful sale, refresh products to get updated stock values
-      await refreshProducts();
+      toast.success("Sale completed successfully");
       
       // Reset form
       setCart([]);
       setNotes("");
-      toast.success("Sale completed successfully");
-      
-    } catch (error: any) {
-      console.error("Failed to complete sale:", error);
-      toast.error(error.message || "Failed to complete sale");
-    } finally {
-      setIsSubmitting(false);
+    } catch (error) {
+      toast.error("Failed to complete sale");
+      console.error(error);
     }
   };
   
@@ -323,9 +295,9 @@ const SalesForm = () => {
                 <Button
                   className="w-full"
                   onClick={handleCheckout}
-                  disabled={cart.length === 0 || isSubmitting}
+                  disabled={cart.length === 0}
                 >
-                  {isSubmitting ? "Processing..." : "Complete Sale"}
+                  Complete Sale
                 </Button>
               </div>
             </div>
