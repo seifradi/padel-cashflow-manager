@@ -1,3 +1,4 @@
+
 import { Product, ProductCategory } from "@/lib/types";
 import { ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -166,17 +167,23 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
   
   const adjustStock = useCallback(async (productId: string, quantity: number, isAddition: boolean): Promise<void> => {
     try {
+      console.log(`Adjusting stock for product ${productId}: ${isAddition ? '+' : '-'}${quantity}`);
+      
+      // Call the new database function to adjust stock
+      const { error } = await supabase
+        .rpc('adjust_product_stock', {
+          product_id_param: productId,
+          quantity_param: quantity,
+          is_addition: isAddition
+        });
+        
+      if (error) throw error;
+      
+      // Refresh the products to get the updated stock levels
+      await refreshProducts();
+      
       const product = products.find(p => p.id === productId);
       if (!product) throw new Error("Product not found");
-      
-      const newStock = isAddition 
-        ? product.stock + quantity 
-        : Math.max(0, product.stock - quantity);
-      
-      await updateProduct({
-        ...product,
-        stock: newStock
-      });
       
       const message = isAddition 
         ? `Added ${quantity} items to ${product.name}`
@@ -194,7 +201,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         variant: "destructive",
       });
     }
-  }, [products, toast]);
+  }, [products, refreshProducts, toast]);
 
   return (
     <ProductContext.Provider value={{ 

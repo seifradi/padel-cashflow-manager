@@ -70,7 +70,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
 
       setSales(prev => [...prev, newSale]);
       
-      // 4. Refresh products to get updated stock levels (only once)
+      // 4. Refresh products to get updated stock levels
       await refreshProducts();
       
       console.log('Products refreshed after sale');
@@ -89,7 +89,7 @@ export const SaleProvider = ({ children }: { children: ReactNode }) => {
       setIsProcessing(false);
       console.log('Sale transaction completed, processing state reset');
     }
-  }, [isProcessing, products, refreshProducts, toast]);
+  }, [isProcessing, refreshProducts, toast]);
 
   return (
     <SaleContext.Provider value={{ sales, addSale }}>

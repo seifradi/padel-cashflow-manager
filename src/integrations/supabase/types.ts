@@ -237,6 +237,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          new_stock: number
           product_id: string
           product_name: string
           stock_quantity: number
@@ -245,6 +246,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          new_stock?: number
           product_id: string
           product_name: string
           stock_quantity?: number
@@ -253,6 +255,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          new_stock?: number
           product_id?: string
           product_name?: string
           stock_quantity?: number
@@ -405,6 +408,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_product_stock: {
+        Args: {
+          product_id_param: string
+          quantity_param: number
+          is_addition: boolean
+        }
+        Returns: undefined
+      }
       initialize_product_inventory: {
         Args: Record<PropertyKey, never>
         Returns: undefined

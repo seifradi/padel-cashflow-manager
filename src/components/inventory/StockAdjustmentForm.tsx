@@ -31,7 +31,7 @@ interface StockAdjustmentFormProps {
 }
 
 const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentFormProps) => {
-  const { products, updateProduct } = useData();
+  const { products, adjustStock } = useData();
   
   const [adjustmentType, setAdjustmentType] = useState<'add' | 'subtract' | 'set'>('add');
   const [quantity, setQuantity] = useState(0);
@@ -54,24 +54,17 @@ const StockAdjustmentForm = ({ isOpen, onClose, productId }: StockAdjustmentForm
     try {
       setLoading(true);
       
-      let newStock = product.stock;
-      
-      switch (adjustmentType) {
-        case 'add':
-          newStock += quantity;
-          break;
-        case 'subtract':
-          newStock = Math.max(0, newStock - quantity);
-          break;
-        case 'set':
-          newStock = quantity;
-          break;
+      if (adjustmentType === 'set') {
+        // For 'set' type, calculate the difference and determine whether to add or subtract
+        const difference = quantity - product.stock;
+        
+        if (difference !== 0) {
+          await adjustStock(productId, Math.abs(difference), difference > 0);
+        }
+      } else {
+        // For 'add' or 'subtract' type, use the adjustStock function directly
+        await adjustStock(productId, quantity, adjustmentType === 'add');
       }
-      
-      await updateProduct({
-        ...product,
-        stock: newStock
-      });
       
       toast.success(`Stock ${adjustmentType === 'add' ? 'added' : adjustmentType === 'subtract' ? 'removed' : 'updated'} successfully`);
       onClose();
