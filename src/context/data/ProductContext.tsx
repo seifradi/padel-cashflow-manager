@@ -170,6 +170,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log(`Adjusting stock for product ${productId}: ${isAddition ? '+' : '-'}${quantity}`);
       
+      // Call our custom RPC function to adjust the stock in both tables
       const { error } = await supabase.rpc(
         'adjust_product_stock',
         {
@@ -181,8 +182,12 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
         
       if (error) throw error;
       
+      console.log('Stock adjustment completed in database, refreshing product data');
+      
+      // Refresh the products after the stock adjustment
       await refreshProducts();
       
+      // Get the product name for the toast message
       const product = products.find(p => p.id === productId);
       if (!product) throw new Error("Product not found");
       
